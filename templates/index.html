@@ -1,0 +1,194 @@
+cat > templates/index.html <<'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>E-Books Library | Nashik Digital Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'], display: ['"Playfair Display"', 'serif'] }, colors: { primary: '#1E40AF', secondary: '#64748B', accent: '#F59E0B' }}}}
+    </script>
+    <style>
+        @keyframes fadeIn { from { opacity:0; transform:translateY(20px);} to { opacity:1; transform:translateY(0);} }
+        .book-card { transition:all .3s ease; animation:fadeIn .6s ease-out forwards; }
+        .book-card:hover { transform:translateY(-8px); box-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 10px 10px -5px rgba(0,0,0,.04); }
+        .loading-spinner { border:4px solid #f3f3f3; border-top:4px solid #1E40AF; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; margin:20px auto; }
+        @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <div class="flex items-center">
+                <i class="fas fa-book-open text-primary text-2xl mr-3"></i>
+                <h1 class="text-2xl font-bold text-primary font-display">E-Library</h1>
+            </div>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="/" class="text-gray-700 hover:text-primary font-medium">Home</a>
+                <a href="/upload" class="bg-primary text-white px-5 py-2 rounded-full hover:bg-blue-700 font-medium">
+                    <i class="fas fa-upload mr-2"></i>Upload Book
+                </a>
+            </div>
+            <button id="mobile-menu-btn" class="md:hidden text-gray-700"><i class="fas fa-bars text-xl"></i></button>
+        </div>
+        <div id="mobile-menu" class="md:hidden hidden bg-white border-t">
+            <a href="/" class="block px-4 py-3 text-gray-700 hover:bg-gray-100">Home</a>
+            <a href="/upload" class="block px-4 py-3 text-primary font-medium hover:bg-blue-50"><i class="fas fa-upload mr-2"></i>Upload Book</a>
+        </div>
+    </nav>
+
+    <section class="bg-gradient-to-br from-blue-50 to-indigo-100 py-16 text-center">
+        <div class="max-w-7xl mx-auto px-4">
+            <h2 class="text-5xl md:text-6xl font-bold text-dark font-display mb-6">Your Digital Reading Hub</h2>
+            <p class="text-xl text-secondary mb-8 max-w-3xl mx-auto">Discover, read, and share e-books from Nashik & beyond.</p>
+            <div class="max-w-3xl mx-auto relative">
+                <div class="flex items-center bg-white rounded-full shadow-xl p-2">
+                    <i class="fas fa-search text-gray-400 ml-5"></i>
+                    <input type="text" id="global-search" placeholder="Search by title, author, tags..." class="flex-1 px-4 py-3 outline-none text-lg"/>
+                    <button id="search-btn" class="bg-primary text-white px-8 py-3 rounded-full hover:bg-blue-700 font-medium mr-2">Search</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="max-w-7xl mx-auto px-4 py-12">
+        <div class="flex flex-col lg:flex-row gap-8">
+            <aside class="lg:w-64">
+                <div class="bg-white rounded-xl shadow-md p-6 sticky top-24">
+                    <h3 class="font-bold text-lg mb-4 flex items-center"><i class="fas fa-filter mr-2 text-primary"></i> Filters</h3>
+                    <select id="filter-category" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4">
+                        <option value="">All Categories</option>
+                        <option>Fiction</option><option>Science</option><option>Biography</option>
+                    </select>
+                    <button id="clear-filters" class="w-full text-sm text-primary hover:underline">Clear all</button>
+                </div>
+            </aside>
+
+            <div class="flex-1">
+                <div class="flex justify-between items-center mb-6">
+                    <p id="results-count" class="text-secondary">Loading…</p>
+                    <select id="sort-select" class="border border-gray-300 rounded-lg px-4 py-2 text-sm">
+                        <option>Most Recent</option><option>Title A-Z</option><option>Popularity</option>
+                    </select>
+                </div>
+                <div id="books-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+                <div id="loading" class="loading-spinner hidden"></div>
+                <div id="no-results" class="text-center py-12 text-gray-500 hidden">
+                    <p class="text-xl">No books found.</p>
+                </div>
+                <div class="flex justify-center mt-10" id="pagination"></div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-dark text-white py-12 mt-16 text-center">
+        <div class="max-w-7xl mx-auto px-4">
+            © 2025 E-Library, Nashik. Built with passion.
+        </div>
+    </footer>
+
+    <div id="book-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-screen overflow-y-auto p-8 relative">
+            <button id="close-modal" class="absolute top-4 right-4 text-2xl text-gray-500 hover:text-gray-800"><i class="fas fa-times"></i></button>
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('mobile-menu-btn').addEventListener('click',()=>document.getElementById('mobile-menu').classList.toggle('hidden'));
+        let allBooks = {{ books|tojson|safe }};
+        let currentPage = 1, booksPerPage = 8;
+
+        function renderBooks(books, page=1){
+            const start = (page-1)*booksPerPage, end = start+booksPerPage;
+            const slice = books.slice(start,end);
+            const container = document.getElementById('books-container');
+            if(!slice.length){ document.getElementById('no-results').classList.remove('hidden'); container.innerHTML=''; return; }
+            document.getElementById('no-results').classList.add('hidden');
+            container.innerHTML = slice.map(b=>`
+                <div class="book-card bg-white rounded-xl shadow-md overflow-hidden cursor-pointer" onclick="openModal(${b.id})">
+                    <img src="${b.cover}" alt="${b.title}" class="w-full h-64 object-cover" loading="lazy">
+                    <div class="p-5">
+                        <h3 class="font-bold text-lg mb-1 line-clamp-1">${b.title}</h3>
+                        <p class="text-secondary text-sm mb-2">by ${b.author}</p>
+                        <p class="text-sm text-gray-600 line-clamp-2 mb-3">${b.description}</p>
+                        <div class="flex justify-between items-center text-xs text-gray-500">
+                            <span class="bg-blue-100 text-primary px-2 py-1 rounded">${b.format}</span>
+                            <span><i class="fas fa-download mr-1"></i>${b.downloads}</span>
+                        </div>
+                    </div>
+                </div>`).join('');
+            renderPagination(books.length,page);
+        }
+
+        function renderPagination(total,page){
+            const pages = Math.ceil(total/booksPerPage);
+            const el = document.getElementById('pagination');
+            if(pages<=1){ el.innerHTML=''; return; }
+            let html=''; for(let i=1;i<=pages;i++) html+=`<button onclick="changePage(${i})" class="mx-1 px-4 py-2 rounded ${i===page?'bg-primary text-white':'bg-white border hover:bg-gray-50'}">${i}</button>`;
+            el.innerHTML=html;
+        }
+
+        function changePage(p){ currentPage=p; renderBooks(filterBooks(),p); window.scrollTo({top:0,behavior:'smooth'}); }
+
+        function filterBooks(){
+            const q = document.getElementById('global-search').value.toLowerCase();
+            const cat = document.getElementById('filter-category').value.toLowerCase();
+            return allBooks.filter(b=>{
+                const matchQ = b.title.toLowerCase().includes(q)||b.author.toLowerCase().includes(q)||b.tags.toLowerCase().includes(q);
+                const matchCat = !cat || b.tags.toLowerCase().includes(cat);
+                return matchQ && matchCat;
+            });
+        }
+
+        let timeout;
+        document.getElementById('global-search').addEventListener('input',()=>{
+            clearTimeout(timeout);
+            timeout=setTimeout(()=>{ currentPage=1; const res=filterBooks(); document.getElementById('results-count').textContent=`${res.length} book${res.length!==1?'s':''} found`; renderBooks(res); },300);
+        });
+        document.getElementById('search-btn').addEventListener('click',()=>document.getElementById('global-search').dispatchEvent(new Event('input')));
+
+        document.getElementById('sort-select').addEventListener('change',()=>{
+            const sort = document.getElementById('sort-select').value;
+            allBooks.sort((a,b)=>{
+                if(sort==='Title A-Z') return a.title.localeCompare(b.title);
+                if(sort==='Popularity') return b.downloads - a.downloads;
+                return b.id - a.id;
+            });
+            renderBooks(allBooks);
+        });
+
+        function openModal(id){
+            const b = allBooks.find(x=>x.id===id);
+            document.getElementById('modal-content').innerHTML = `
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div><img src="${b.cover}" class="w-full rounded-lg shadow-lg">
+                        <a href="/download/${b.id}" class="block mt-4 bg-primary text-white text-center py-3 rounded-lg font-medium hover:bg-blue-700">
+                            <i class="fas fa-download mr-2"></i> Download ${b.format}
+                        </a>
+                    </div>
+                    <div class="md:col-span-2">
+                        <h2 class="text-3xl font-bold font-display mb-2">${b.title}</h2>
+                        <p class="text-lg text-secondary mb-4">by ${b.author}</p>
+                        <p class="text-gray-700 mb-6">${b.description}</p>
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            ${b.tags.split(',').map(t=>`<span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">${t.trim()}</span>`).join('')}
+                        </div>
+                    </div>
+                </div>`;
+            document.getElementById('book-modal').classList.remove('hidden');
+        }
+        document.getElementById('close-modal').addEventListener('click',()=>document.getElementById('book-modal').classList.add('hidden'));
+
+        window.onload = () => {
+            document.getElementById('results-count').textContent = `${allBooks.length} books available`;
+            renderBooks(allBooks);
+        };
+    </script>
+</body>
+</html>
+EOF
