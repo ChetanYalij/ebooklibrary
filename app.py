@@ -22,70 +22,43 @@ def placeholder_cover(title):
     h = hex(hash(title) % 0xFFFFFF)[2:].zfill(6)
     return f"https://via.placeholder.com/300x450/{h}/FFFFFF?text={title[0].upper()}"
 
-@app.route('/')
-def index():
-    books = Book.query.all()
-    data = [{
-        'id': b.id,
-        'title': b.title,
-        'author': b.author,
-        'description': b.description or '',
-        'tags': b.tags or '',
-        'cover': b.cover_url or placeholder_cover(b.title),
-        'format': os.path.splitext(b.file_path)[1][1:].upper(),
-        'downloads': b.download_count
-    } for b in books]
-    return render_template('index.html', books=data)
-
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
     if request.method == 'POST':
-        file = request.files.get('file')
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            new_book = Book(
-                title=request.form['title'],
-                author=request.form['author'],
-                description=request.form.get('description'),
-                file_path=filename,
-                tags=request.form.get('tags'),
-                cover_url=request.form.get('cover_url')
-            )
-            db.session.add(new_book)
-            db.session.commit()
-            return '<script>alert("Uploaded!");window.location="/"</script>'
+        title = request.form['title']
+        author = request.form['author']
+        description = request.form.get('description', '')
+        tags = request.form.get('tags', '')
+        cover_url = request.form.get('cover_url') or placeholder_cover(title)
+
+        upload_type = request.form.get('upload_type', 'file')
+
+        if upload_type == 'file':
+            file = request.files['file']
+            if file and allowed_file(file.filename):
+                upload_result = cloudinary.uploader.upload(file)
+                file_url = upload_result['secure_url']
+            else:
+                return "Invalid file!", 400
+        else:  # URL
+            file_url = request.form['book_url']
+            if not file_url.startswith(('http://', 'https://')):
+                return "Invalid URL!", 400
+
+        new_book = Book(
+            title=title,
+            author=author,
+            description=description,
+            file_path=file_url,
+            tags=tags,
+            cover_url=cover_url
+        )
+        db.session.add(new_book)
+        db.session.commit()
+
+        return '<script>alert("Book Added Successfully!"); window.location="/"</script>'
+
     return render_template('upload.html')
-
-@app.route('/search')
-def search():
-    q = request.args.get('q', '').strip()
-    if not q:
-        return jsonify([])
-    results = Book.query.filter(
-        (Book.title.ilike(f'%{q}%')) |
-        (Book.author.ilike(f'%{q}%')) |
-        (Book.tags.ilike(f'%{q}%'))
-    ).all()
-    data = [{
-        'id': b.id,
-        'title': b.title,
-        'author': b.author,
-        'description': b.description or '',
-        'tags': b.tags or '',
-        'cover': b.cover_url or placeholder_cover(b.title),
-        'format': os.path.splitext(b.file_path)[1][1:].upper(),
-        'downloads': b.download_count
-    } for b in results]
-    return jsonify(data)
-
-@app.route('/download/<int:book_id>')
-def download(book_id):
-    book = Book.query.get_or_404(book_id)
-    book.download_count += 1
-    db.session.commit()
-    return send_from_directory(app.config['UPLOAD_FOLDER'], book.file_path)
-
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     with app.app_context():
