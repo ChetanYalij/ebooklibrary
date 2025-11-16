@@ -99,7 +99,6 @@
 
     <script>
         document.getElementById('mobile-menu-btn').addEventListener('click',()=>document.getElementById('mobile-menu').classList.toggle('hidden'));
-        let allBooks = {{ books|tojson|safe }};
         let currentPage = 1, booksPerPage = 8;
 
         function renderBooks(books, page=1){
@@ -190,4 +189,3 @@
     </script>
 </body>
 </html>
-EOF

@@ -76,3 +76,4 @@ render.yml
 
 # Uploads folder (books will be large)
 uploads/
+/target/

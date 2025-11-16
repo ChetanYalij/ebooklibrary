@@ -10,7 +10,6 @@ load_dotenv()
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://postgres:password@localhost:5432/ebooklib')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 db.init_app(app)
 
 cloudinary.config(
@@ -25,7 +24,7 @@ def placeholder_cover(title):
 
 @app.route('/')
 def index():
-    search = request.args.get('search', '')
+    search = request.args.get('search', '').strip()
     if search:
         books = Book.query.filter(
             Book.title.ilike(f'%{search}%') |
@@ -34,7 +33,22 @@ def index():
         ).all()
     else:
         books = Book.query.all()
-    return render_template('index.html', books=books)
+
+    # FIX: Convert Book objects to plain dicts for JSON serialization
+    books_list = []
+    for b in books:
+        books_list.append({
+            'id': b.id,
+            'title': b.title,
+            'author': b.author,
+            'description': b.description or '',
+            'file_path': b.file_path,
+            'cover_url': b.cover_url or placeholder_cover(b.title),
+            'tags': b.tags or '',
+            'download_count': b.download_count or 0
+        })
+
+    return render_template('index.html', books=books_list)
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
@@ -44,32 +58,41 @@ def upload():
         description = request.form.get('description', '')
         tags = request.form.get('tags', '')
         cover_url = request.form.get('cover_url') or placeholder_cover(title)
-
         upload_type = request.form.get('upload_type', 'file')
 
         if upload_type == 'file':
-            file = request.files['file']
+            file = request.files.get('file')
+            if not file or file.filename == '':
+                return "No file selected!", 400
             result = cloudinary.uploader.upload(file)
             file_url = result['secure_url']
         else:
-            file_url = request.form['book_url']
+            file_url = request.form.get('book_url')
+            if not file_url:
+                return "URL is required!", 400
 
-        book = Book(title=title, author=author, description=description,
-                    file_path=file_url, tags=tags, cover_url=cover_url)
-        db.session.add(book)
+        new_book = Book(
+            title=title,
+            author=author,
+            description=description,
+            file_path=file_url,
+            tags=tags,
+            cover_url=cover_url
+        )
+        db.session.add(new_book)
         db.session.commit()
-        return '<script>alert("Book Added!"); location="/" </script>'
+        return '<script>alert("Book Added Successfully!"); window.location="/"</script>'
 
     return render_template('upload.html')
 
 @app.route('/download/<int:book_id>')
 def download(book_id):
     book = Book.query.get_or_404(book_id)
-    book.download_count += 1
+    book.download_count = (book.download_count or 0) + 1
     db.session.commit()
     return redirect(book.file_path)
 
-# create table first time
+# Create tables on first run
 with app.app_context():
     db.create_all()
 
