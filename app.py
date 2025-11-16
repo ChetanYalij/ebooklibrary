@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, url_for
 from models import db, Book
 from dotenv import load_dotenv
 import cloudinary
@@ -8,10 +8,27 @@ import cloudinary.uploader
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://postgres:password@localhost:5432/ebooklib')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db.init_app(app)
 
+# DATABASE URI – On Render psycopg2 Driver is needed.
+database_url = os.getenv('DATABASE_URL')
+if database_url and database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql+psycopg2://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'postgresql+psycopg2://postgres:india@11@localhost:5432/ebooklib'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# QueuePool error Fix (Important for Render)
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_size': 20,
+    'max_overflow': 30,
+    'pool_timeout': 60,
+    'pool_pre_ping': True,
+    'pool_recycle': 3600
+}
+
+db.init_app(app)   # only one time do init
+
+# Cloudinary config
 cloudinary.config(
     cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
     api_key=os.getenv('CLOUDINARY_API_KEY'),
@@ -34,7 +51,7 @@ def index():
     else:
         books = Book.query.all()
 
-    # FIX: Convert Book objects to plain dicts for JSON serialization
+    # Fix JSON serialization
     books_list = []
     for b in books:
         books_list.append({
@@ -47,16 +64,15 @@ def index():
             'tags': b.tags or '',
             'download_count': b.download_count or 0
         })
-
     return render_template('index.html', books=books_list)
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
     if request.method == 'POST':
-        title = request.form['title']
-        author = request.form['author']
-        description = request.form.get('description', '')
-        tags = request.form.get('tags', '')
+        title = request.form['title'].strip()
+        author = request.form['author'].strip()
+        description = request.form.get('description', '').strip()
+        tags = request.form.get('tags', '').strip()
         cover_url = request.form.get('cover_url') or placeholder_cover(title)
         upload_type = request.form.get('upload_type', 'file')
 
@@ -64,7 +80,7 @@ def upload():
             file = request.files.get('file')
             if not file or file.filename == '':
                 return "No file selected!", 400
-            result = cloudinary.uploader.upload(file)
+            result = cloudinary.uploader.upload(file, resource_type="auto")
             file_url = result['secure_url']
         else:
             file_url = request.form.get('book_url')
@@ -92,9 +108,11 @@ def download(book_id):
     db.session.commit()
     return redirect(book.file_path)
 
-# Create tables on first run
+# Create tables
 with app.app_context():
     db.create_all()
 
+# For Render PORT Binding (important!)
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
