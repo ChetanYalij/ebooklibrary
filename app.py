@@ -9,20 +9,18 @@ load_dotenv()
 
 app = Flask(__name__)
 
+# ========= DATABASE CONFIG =========
 database_url = os.getenv('DATABASE_URL')
-
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql+psycopg2://", 1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///ebooklib.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
     'pool_recycle': 300,
     'pool_timeout': 60
 }
-
 db.init_app(app)
 
 # ========= CLOUDINARY =========
@@ -39,12 +37,14 @@ def placeholder_cover(title):
 # ========= ROUTES =========
 @app.route('/')
 def index():
-    search = request.args.get('search', '').strip()
+    search = request.args.get('search', '').strip().lower()  # ← छोटा बदल
+
     if search:
+        # मराठी + English दोन्ही सर्च परफेक्ट होईल (PostgreSQL लेवलवर lower)
         books = Book.query.filter(
-            Book.title.ilike(f'%{search}%') |
-            Book.author.ilike(f'%{search}%') |
-            Book.tags.ilike(f'%{search}%')
+            db.func.lower(Book.title).ilike(f'%{search}%') |
+            db.func.lower(Book.author).ilike(f'%{search}%') |
+            db.func.lower(Book.tags).ilike(f'%{search}%')
         ).all()
     else:
         books = Book.query.all()
@@ -103,7 +103,7 @@ def download(book_id):
 with app.app_context():
     db.create_all()
 
-# ========= RUN APP (Render + Local) =========
+# ========= RUN APP =========
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
