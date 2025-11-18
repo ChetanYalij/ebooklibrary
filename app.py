@@ -1,6 +1,7 @@
 import os
 from flask import Flask, render_template, request, redirect
 from models import db, Book
+from sqlalchemy import func as db_func  
 from dotenv import load_dotenv
 import cloudinary
 import cloudinary.uploader
@@ -37,14 +38,13 @@ def placeholder_cover(title):
 # ========= ROUTES =========
 @app.route('/')
 def index():
-    search = request.args.get('search', '').strip().lower()  # ← छोटा बदल
-
+    search = request.args.get('search', '').strip()
+    
     if search:
-        # मराठी + English दोन्ही सर्च परफेक्ट होईल (PostgreSQL लेवलवर lower)
         books = Book.query.filter(
-            db.func.lower(Book.title).ilike(f'%{search}%') |
-            db.func.lower(Book.author).ilike(f'%{search}%') |
-            db.func.lower(Book.tags).ilike(f'%{search}%')
+            db_func.lower(Book.title).ilike(f'%{search.lower()}%') |
+            db_func.lower(Book.author).ilike(f'%{search.lower()}%') |
+            db_func.lower(Book.tags).ilike(f'%{search.lower()}%')
         ).all()
     else:
         books = Book.query.all()
@@ -61,6 +61,7 @@ def index():
             'tags': b.tags or '',
             'download_count': b.download_count or 0
         })
+    
     return render_template('index.html', books=books_list)
 
 @app.route('/upload', methods=['GET', 'POST'])
@@ -80,7 +81,7 @@ def upload():
             result = cloudinary.uploader.upload(file, resource_type="auto")
             file_url = result['secure_url']
         else:
-            file_url = request.form.get('book_url')
+            file_url = request.form.get('book book_url')
             if not file_url:
                 return "URL is required!", 400
 
