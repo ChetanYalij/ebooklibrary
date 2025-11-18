@@ -38,13 +38,13 @@ def placeholder_cover(title):
 # ========= ROUTES =========
 @app.route('/')
 def index():
-    search = request.args.get('search', '').strip()
+    search = request.args.get('search', '').strip().lower()
     
     if search:
         books = Book.query.filter(
-            db_func.lower(Book.title).ilike(f'%{search.lower()}%') |
-            db_func.lower(Book.author).ilike(f'%{search.lower()}%') |
-            db_func.lower(Book.tags).ilike(f'%{search.lower()}%')
+            db.func.lower(Book.title).ilike(f'%{search}%') |
+            db.func.lower(Book.author).ilike(f'%{search}%') |
+            db.func.lower(Book.tags).ilike(f'%{search)}%')
         ).all()
     else:
         books = Book.query.all()
