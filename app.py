@@ -1,7 +1,7 @@
 import os
 from flask import Flask, render_template, request, redirect
 from models import db, Book
-from sqlalchemy import func as db_func  
+from sqlalchemy import func  # ← योग्य इम्पोर्ट (db_func नव्हे)
 from dotenv import load_dotenv
 import cloudinary
 import cloudinary.uploader
@@ -38,13 +38,14 @@ def placeholder_cover(title):
 # ========= ROUTES =========
 @app.route('/')
 def index():
-    search = request.args.get('search', '').strip().lower()
-    
+    search = request.args.get('search', '').strip()
+
     if search:
+        # योग्य func वापरलं + search.lower() केलं
         books = Book.query.filter(
-            db.func.lower(Book.title).ilike(f'%{search}%') |
-            db.func.lower(Book.author).ilike(f'%{search}%') |
-            db.func.lower(Book.tags).ilike(f'%{search)}%')
+            func.lower(Book.title).ilike(f'%{search.lower()}%') |
+            func.lower(Book.author).ilike(f'%{search.lower()}%') |
+            func.lower(Book.tags).ilike(f'%{search.lower()}%')
         ).all()
     else:
         books = Book.query.all()
@@ -61,8 +62,9 @@ def index():
             'tags': b.tags or '',
             'download_count': b.download_count or 0
         })
-    
+
     return render_template('index.html', books=books_list)
+
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
@@ -81,7 +83,8 @@ def upload():
             result = cloudinary.uploader.upload(file, resource_type="auto")
             file_url = result['secure_url']
         else:
-            file_url = request.form.get('book book_url')
+            # ही चूक होती → "book book_url" → "book_url"
+            file_url = request.form.get('book_url')
             if not file_url:
                 return "URL is required!", 400
 
@@ -93,6 +96,7 @@ def upload():
 
     return render_template('upload.html')
 
+
 @app.route('/download/<int:book_id>')
 def download(book_id):
     book = Book.query.get_or_404(book_id)
@@ -100,9 +104,11 @@ def download(book_id):
     db.session.commit()
     return redirect(book.file_path)
 
+
 # ========= CREATE TABLES =========
 with app.app_context():
     db.create_all()
+
 
 # ========= RUN APP =========
 if __name__ == '__main__':
