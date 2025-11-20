@@ -1,7 +1,7 @@
 import os
 from flask import Flask, render_template, request, redirect
 from models import db, Book
-from sqlalchemy import func  # ← योग्य इम्पोर्ट (db_func नव्हे)
+from sqlalchemy import func  # योग्य इम्पोर्ट (db_func नव्हे)
 from dotenv import load_dotenv
 import cloudinary
 import cloudinary.uploader
@@ -38,14 +38,14 @@ def placeholder_cover(title):
 # ========= ROUTES =========
 @app.route('/')
 def index():
-    search = request.args.get('search', '').strip()
+    search = request.args.get('search', '').strip().lower()  # केस-इन्सेन्सिटिव्ह
 
     if search:
         # योग्य func वापरलं + search.lower() केलं
         books = Book.query.filter(
-            func.lower(Book.title).ilike(f'%{search.lower()}%') |
-            func.lower(Book.author).ilike(f'%{search.lower()}%') |
-            func.lower(Book.tags).ilike(f'%{search.lower()}%')
+            func.lower(Book.title).ilike(f'%{search}%') |
+            func.lower(Book.author).ilike(f'%{search}%') |
+            func.lower(Book.tags).ilike(f'%{search}%')
         ).all()
     else:
         books = Book.query.all()
@@ -83,7 +83,7 @@ def upload():
             result = cloudinary.uploader.upload(file, resource_type="auto")
             file_url = result['secure_url']
         else:
-            # ही चूक होती → "book book_url" → "book_url"
+            # टायपो फिक्स: 'book book_url' → 'book_url'
             file_url = request.form.get('book_url')
             if not file_url:
                 return "URL is required!", 400
