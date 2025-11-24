@@ -1,7 +1,7 @@
 import os
 from flask import Flask, render_template, request, redirect
 from models import db, Book
-from sqlalchemy import func  # योग्य इम्पोर्ट (db_func नव्हे)
+from sqlalchemy import func
 from dotenv import load_dotenv
 import cloudinary
 import cloudinary.uploader
@@ -38,10 +38,9 @@ def placeholder_cover(title):
 # ========= ROUTES =========
 @app.route('/')
 def index():
-    search = request.args.get('search', '').strip().lower()  # केस-इन्सेन्सिटिव्ह
+    search = request.args.get('search', '').strip().lower()
 
     if search:
-        # योग्य func वापरलं + search.lower() केलं
         books = Book.query.filter(
             func.lower(Book.title).ilike(f'%{search}%') |
             func.lower(Book.author).ilike(f'%{search}%') |
@@ -50,6 +49,7 @@ def index():
     else:
         books = Book.query.all()
 
+    # ========= BOOKS LIST BUILD =========
     books_list = []
     for b in books:
         books_list.append({
@@ -83,13 +83,18 @@ def upload():
             result = cloudinary.uploader.upload(file, resource_type="auto")
             file_url = result['secure_url']
         else:
-            # टायपो फिक्स: 'book book_url' → 'book_url'
             file_url = request.form.get('book_url')
             if not file_url:
                 return "URL is required!", 400
 
-        new_book = Book(title=title, author=author, description=description,
-                        file_path=file_url, tags=tags, cover_url=cover_url)
+        new_book = Book(
+            title=title,
+            author=author,
+            description=description,
+            file_path=file_url,
+            tags=tags,
+            cover_url=cover_url
+        )
         db.session.add(new_book)
         db.session.commit()
         return '<script>alert("Book Added Successfully!"); window.location="/"</script>'

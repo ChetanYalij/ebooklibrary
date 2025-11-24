@@ -105,6 +105,7 @@
             const start = (page-1)*booksPerPage, end = start+booksPerPage;
             const slice = books.slice(start,end);
             const container = document.getElementById('books-container');
+            const allBooks = {{ books|tojson }};
             if(!slice.length){ document.getElementById('no-results').classList.remove('hidden'); container.innerHTML=''; return; }
             document.getElementById('no-results').classList.add('hidden');
             container.innerHTML = slice.map(b=>`
