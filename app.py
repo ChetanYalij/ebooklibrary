@@ -31,16 +31,18 @@ def placeholder_cover(title):
 # ========= ROUTES =========
 @app.route('/')
 def index():
-    search = request.args.get('search', '').strip().lower()
+    search = request.args.get('search', '').strip()
 
     if search:
         books = Book.query.filter(
-            func.lower(Book.title).ilike(f'%{search}%') |
-            func.lower(Book.author).ilike(f'%{search}%') |
-            func.lower(Book.tags).ilike(f'%{search}%')
-        ).all()
+            db.or_(
+                Book.title.ilike(f'%{search}%'),
+                Book.author.ilike(f'%{search}%'),
+                Book.tags.ilike(f'%{search}%')
+            )
+        ).order_by(Book.created_at.desc()).all()
     else:
-        books = Book.query.all()
+        books = Book.query.order_by(Book.created_at.desc()).all()
 
     # ========= BOOKS LIST BUILD =========
     books_list = []
