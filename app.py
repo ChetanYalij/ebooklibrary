@@ -102,7 +102,6 @@ def download(book_id):
     db.session.commit()
     return redirect(book.file_path)
 
-
 # ========= CREATE TABLES =========
 with app.app_context():
     db.create_all()
