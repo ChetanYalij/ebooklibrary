@@ -1,7 +1,7 @@
 import os
 from flask import Flask, render_template, request, redirect
 from models import db, Book
-from sqlalchemy import func
+from sqlalchemy import or_
 from dotenv import load_dotenv
 import cloudinary
 import cloudinary.uploader
