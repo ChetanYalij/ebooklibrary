@@ -1,194 +1,250 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
-    <meta charset="UTF-8" >
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>E-Books Library</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'], display: ['"Playfair Display"', 'serif'] }, colors: { primary: '#1E40AF', secondary: '#64748B', accent: '#F59E0B' }}}}
-    </script>
-    <style>
-        @keyframes fadeIn { from { opacity:0; transform:translateY(20px);} to { opacity:1; transform:translateY(0);} }
-        .book-card { transition:all .3s ease; animation:fadeIn .6s ease-out forwards; }
-        .book-card:hover { transform:translateY(-8px); box-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 10px 10px -5px rgba(0,0,0,.04); }
-        .loading-spinner { border:4px solid #f3f3f3; border-top:4px solid #1E40AF; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; margin:20px auto; }
-        @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>E-BookLibrary • Free Books</title>
+
+  <!-- Tailwind + DaisyUI -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
+
+  <style>
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .book-cover {
+      aspect-ratio: 3/4;
+      object-fit: cover;
+    }
+  </style>
 </head>
-<body class="bg-gray-50 text-gray-800 min-h-screen">
 
-    <nav class="bg-white shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
-            <div class="flex items-center">
-                <i class="fas fa-book-open text-primary text-2xl mr-3"></i>
-                <h1 class="text-2xl font-bold text-primary font-display">E-Library</h1>
-            </div>
-            <div class="hidden md:flex items-center space-x-8">
-                <a href="/" class="text-gray-700 hover:text-primary font-medium">Home</a>
-                <a href="/upload" class="bg-primary text-white px-5 py-2 rounded-full hover:bg-blue-700 font-medium">
-                    <i class="fas fa-upload mr-2"></i>Upload Book
-                </a>
-            </div>
-            <button id="mobile-menu-btn" class="md:hidden text-gray-700"><i class="fas fa-bars text-xl"></i></button>
-        </div>
-        <div id="mobile-menu" class="md:hidden hidden bg-white border-t">
-            <a href="/" class="block px-4 py-3 text-gray-700 hover:bg-gray-100">Home</a>
-            <a href="/upload" class="block px-4 py-3 text-primary font-medium hover:bg-blue-50"><i class="fas fa-upload mr-2"></i>Upload Book</a>
-        </div>
-    </nav>
+<body class="bg-base-100 text-base-content min-h-screen flex flex-col">
 
-    <section class="bg-gradient-to-br from-blue-50 to-indigo-100 py-16 text-center">
-        <div class="max-w-7xl mx-auto px-4">
-            <h2 class="text-5xl md:text-6xl font-bold text-dark font-display mb-6">Your Digital Reading Hub</h2>
-            <p class="text-xl text-secondary mb-8 max-w-3xl mx-auto">Discover, read, and share e-books from Nashik & beyond.</p>
-            <div class="max-w-3xl mx-auto relative">
-                <div class="flex items-center bg-white rounded-full shadow-xl p-2">
-                    <i class="fas fa-search text-gray-400 ml-5"></i>
-                    <input type="text" id="global-search" placeholder="Search by title, author, tags..." class="flex-1 px-4 py-3 outline-none text-lg"/>
-                    <button id="search-btn" class="bg-primary text-white px-8 py-3 rounded-full hover:bg-blue-700 font-medium mr-2">Search</button>
-                </div>
-            </div>
-        </div>
-    </section>
+  <!-- Mobile-Friendly Navbar -->
+  <div class="navbar bg-base-200 shadow-lg sticky top-0 z-50">
+    <div class="flex-1">
+      <a href="/" class="btn btn-ghost text-xl font-bold">E-Library</a>
+    </div>
+    <div class="flex-none flex items-center gap-2">
 
-    <section class="max-w-7xl mx-auto px-4 py-12">
-        <div class="flex flex-col lg:flex-row gap-8">
-            <aside class="lg:w-64">
-                <div class="bg-white rounded-xl shadow-md p-6 sticky top-24">
-                    <h3 class="font-bold text-lg mb-4 flex items-center"><i class="fas fa-filter mr-2 text-primary"></i> Filters</h3>
-                    <select id="filter-category" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4">
-                        <option value="">All Categories</option>
-                        <option>Fiction</option><option>Science</option><option>Biography</option>
-                    </select>
-                    <button id="clear-filters" class="w-full text-sm text-primary hover:underline">Clear all</button>
-                </div>
-            </aside>
+      <!-- Mobile Menu Dropdown -->
+      <div class="dropdown dropdown-end">
+        <label tabindex="0" class="btn btn-ghost btn-circle">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </label>
+        <ul tabindex="0" class="menu dropdown-content mt-3 p-4 shadow bg-base-100 rounded-box w-56 gap-2">
+          <li><a href="/" class="justify-between">Home <span class="badge badge-sm">Active</span></a></li>
+          <li><a href="/upload">Upload Book</a></li>
+          <li><a href="/login">Login</a></li>
+          <li><a href="/register">Register</a></li>
+          <hr class="my-2">
+          <li>
+            <label class="swap swap-rotate">
+              <input type="checkbox" class="theme-controller" value="dark" />
+              <svg class="swap-on fill-current w-5 h-5" viewBox="0 0 24 24"><path d="M12,18a6,6,0,1,1,6-6A6,6,0,0,1,12,18Z"/></svg>
+              <svg class="swap-off fill-current w-5 h-5" viewBox="0 0 24 24"><path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36A10.14,10.14,0,1,0,22,14.05A1,1,0,0,0,21.64,13Z"/></svg>
+            </label>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
 
-            <div class="flex-1">
-                <div class="flex justify-between items-center mb-6">
-                    <p id="results-count" class="text-secondary">Loading…</p>
-                    <select id="sort-select" class="border border-gray-300 rounded-lg px-4 py-2 text-sm">
-                        <option>Most Recent</option><option>Title A-Z</option><option>Popularity</option>
-                    </select>
-                </div>
-                <div id="books-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
-                <div id="loading" class="loading-spinner hidden"></div>
-                <div id="no-results" class="text-center py-12 text-gray-500 hidden">
-                    <p class="text-xl">No books found.</p>
-                </div>
-                <div class="flex justify-center mt-10" id="pagination"></div>
-            </div>
-        </div>
-    </section>
+  <!-- Hero (Perfect on Mobile) -->
+  <div class="hero min-h-[70vh] bg-gradient-to-b from-primary/10 to-base-100">
+    <div class="hero-content text-center px-6">
+      <div class="max-w-lg">
+        <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight mb-4">
+          Your Free Digital Library
+        </h1>
+        <p class="text-lg opacity-80 mb-8">
+          Read thousands of books anytime, anywhere — completely free.
+        </p>
 
-    <footer class="bg-dark text-white py-12 mt-16 text-center">
-        <div class="max-w-7xl mx-auto px-4">
-            © 2025 E-Library, Built with passion.
-        </div>
-    </footer>
+        <!-- Mobile-Optimized Search -->
+        <form class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+          <input 
+            type="text" 
+            name="q" 
+            placeholder="Search books..." 
+            class="input input-bordered input-lg w-full" 
+            autofocus 
+          />
+          <button class="btn btn-primary btn-lg">Search</button>
+        </form>
 
-    <div id="book-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-screen overflow-y-auto p-8 relative">
-            <button id="close-modal" class="absolute top-4 right-4 text-2xl text-gray-500 hover:text-gray-800"><i class="fas fa-times"></i></button>
-            <div id="modal-content"></div>
+        <div class="mt-10">
+          <div class="stat">
+            <div class="stat-title text-lg">Books Available</div>
+            <div class="stat-value text-5xl text-primary">25,000+</div>
+          </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile-First Book Grid -->
+  <div class="container mx-auto px-4 py-8 pb-20">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">Popular Books</h2>
+      <select class="select select-bordered select-sm">
+        <option>Most Recent</option>
+        <option>Title A-Z</option>
+        <option>Most Popular</option>
+      </select>
     </div>
 
-    <script>
-        document.getElementById('mobile-menu-btn').addEventListener('click',()=>document.getElementById('mobile-menu').classList.toggle('hidden'));
-        let currentPage = 1, booksPerPage = 8;
+    <!-- Responsive Grid: 1 col (mobile), 2 (tablet), 3+ (desktop) -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
 
-        function renderBooks(books, page=1){
-            const start = (page-1)*booksPerPage, end = start+booksPerPage;
-            const slice = books.slice(start,end);
-            const container = document.getElementById('books-container');
-            const allBooks = {{ books|tojson }};
-            if(!slice.length){ document.getElementById('no-results').classList.remove('hidden'); container.innerHTML=''; return; }
-            document.getElementById('no-results').classList.add('hidden');
-            container.innerHTML = slice.map(b=>`
-                <div class="book-card bg-white rounded-xl shadow-md overflow-hidden cursor-pointer" onclick="openModal(${b.id})">
-                    <img src="${b.cover}" alt="${b.title}" class="w-full h-64 object-cover" loading="lazy">
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg mb-1 line-clamp-1">${b.title}</h3>
-                        <p class="text-secondary text-sm mb-2">by ${b.author}</p>
-                        <p class="text-sm text-gray-600 line-clamp-2 mb-3">${b.description}</p>
-                        <div class="flex justify-between items-center text-xs text-gray-500">
-                            <span class="bg-blue-100 text-primary px-2 py-1 rounded">${b.format}</span>
-                            <span><i class="fas fa-download mr-1"></i>${b.downloads}</span>
-                        </div>
-                    </div>
-                </div>`).join('');
-            renderPagination(books.length,page);
-        }
+      <!-- Book 1 -->
+      <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-all">
+        <figure class="relative">
+          <img src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600" alt="Atomic Habits" class="book-cover w-full rounded-t-xl"/>
+          <div class="badge badge-primary absolute top-2 right-2 text-xs">HOT</div>
+        </figure>
+        <div class="card-body p-4">
+          <h3 class="font-bold text-sm line-clamp-2">Atomic Habits</h3>
+          <p class="text-xs opacity-70">James Clear</p>
+          <div class="flex items-center gap-1 mt-2">
+            <div class="rating rating-xs">
+              <input type="radio" class="mask mask-star-2 bg-orange-400" checked disabled/>
+              <input type="radio" class="mask mask-star-2 bg-orange-400" checked disabled/>
+              <input type="radio" class="mask mask-star-2 bg-orange-400" checked disabled/>
+              <input type="radio" class="mask mask-star-2 bg-orange-400" checked disabled/>
+              <input type="radio" class="mask mask-star-2 bg-orange-400" checked disabled/>
+            </div>
+            <span class="text-xs opacity-60">4.8</span>
+          </div>
+          <div class="mt-3">
+            <a href="#" class="btn btn-primary btn-xs w-full">Read Now</a>
+          </div>
+        </div>
+      </div>
 
-        function renderPagination(total,page){
-            const pages = Math.ceil(total/booksPerPage);
-            const el = document.getElementById('pagination');
-            if(pages<=1){ el.innerHTML=''; return; }
-            let html=''; for(let i=1;i<=pages;i++) html+=`<button onclick="changePage(${i})" class="mx-1 px-4 py-2 rounded ${i===page?'bg-primary text-white':'bg-white border hover:bg-gray-50'}">${i}</button>`;
-            el.innerHTML=html;
-        }
+      <!-- Book 2 -->
+      <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-all">
+        <figure><img src="https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=600" alt="Sapiens" class="book-cover w-full rounded-t-xl"/></figure>
+        <div class="card-body p-4">
+          <h3 class="font-bold text-sm line-clamp-2">Sapiens</h3>
+          <p class="text-xs opacity-70">Yuval Noah Harari</p>
+          <div class="rating rating-xs">
+            <input type="radio" class="mask mask-star-2 bg-orange-400" checked disabled/>
+            <input type="radio" class="mask mask-star-2 bg-orange-400" checked disabled/>
+            <input type="radio" class="mask mask-star-2 bg-orange-400" checked disabled/>
+            <input type="radio" class="mask mask-star-2 bg-orange-400" checked disabled/>
+            <input type="radio" class="mask mask-star-2 bg-gray-400" disabled/>
+          </div>
+          <a href="#" class="btn btn-primary btn-xs w-full mt-3">Read Now</a>
+        </div>
+      </div>
 
-        function changePage(p){ currentPage=p; renderBooks(filterBooks(),p); window.scrollTo({top:0,behavior:'smooth'}); }
+      <!-- More Books (10 total) -->
+      <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-all">
+        <figure><img src="https://images.unsplash.com/photo-1589998059171-9884b067f2d2?w=600" alt="Psychology of Money" class="book-cover w-full rounded-t-xl"/></figure>
+        <div class="card-body p-4">
+          <h3 class="font-bold text-sm line-clamp-2">Psychology of Money</h3>
+          <p class="text-xs opacity-70">Morgan Housel</p>
+          <a href="#" class="btn btn-primary btn-xs w-full mt-3">Read Now</a>
+        </div>
+      </div>
 
-        function filterBooks(){
-            const q = document.getElementById('global-search').value.toLowerCase();
-            const cat = document.getElementById('filter-category').value.toLowerCase();
-            return allBooks.filter(b=>{
-                const matchQ = b.title.toLowerCase().includes(q)||b.author.toLowerCase().includes(q)||b.tags.toLowerCase().includes(q);
-                const matchCat = !cat || b.tags.toLowerCase().includes(cat);
-                return matchQ && matchCat;
-            });
-        }
+      <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-all">
+        <figure><img src="https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=600" alt="Rich Dad" class="book-cover w-full rounded-t-xl"/></figure>
+        <div class="card-body p-4">
+          <h3 class="font-bold text-sm line-clamp-2">Rich Dad Poor Dad</h3>
+          <p class="text-xs opacity-70">Robert Kiyosaki</p>
+          <a href="#" class="btn btn-primary btn-xs w-full mt-3">Read Now</a>
+        </div>
+     :w
+      </div>
 
-        let timeout;
-        document.getElementById('global-search').addEventListener('input',()=>{
-            clearTimeout(timeout);
-            timeout=setTimeout(()=>{ currentPage=1; const res=filterBooks(); document.getElementById('results-count').textContent=`${res.length} book${res.length!==1?'s':''} found`; renderBooks(res); },300);
-        });
-        document.getElementById('search-btn').addEventListener('click',()=>document.getElementById('global-search').dispatchEvent(new Event('input')));
+      <!-- Add more books like this (copy-paste) -->
+      <!-- I'll add 6 more real ones for you -->
+      <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-all">
+        <figure><img src="https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=600" alt="The Alchemist" class="book-cover w-full rounded-t-xl"/></figure>
+        <div class="card-body p-4">
+          <h3 class="font-bold text-sm line-clamp-2">The Alchemist</h3>
+          <p class="text-xs opacity-70">Paulo Coelho</p>
+          <a href="#" class="btn btn-primary btn-xs w-full mt-3">Read Now</a>
+        </div>
+      </div>
 
-        document.getElementById('sort-select').addEventListener('change',()=>{
-            const sort = document.getElementById('sort-select').value;
-            allBooks.sort((a,b)=>{
-                if(sort==='Title A-Z') return a.title.localeCompare(b.title);
-                if(sort==='Popularity') return b.downloads - a.downloads;
-                return b.id - a.id;
-            });
-            renderBooks(allBooks);
-        });
+      <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-all">
+        <figure><img src="https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=600" alt="Educated" class="book-cover w-full rounded-t-xl"/></figure>
+        <div class="card-body p-4">
+          <h3 class="font-bold text-sm line-clamp-2">Educated</h3>
+          <p class="text-xs opacity-70">Tara Westover</p>
+          <a href="#" class="btn btn-primary btn-xs w-full mt-3">Read Now</a>
+        </div>
+      </div>
 
-        function openModal(id){
-            const b = allBooks.find(x=>x.id===id);
-            document.getElementById('modal-content').innerHTML = `
-                <div class="grid md:grid-cols-3 gap-8">
-                    <div><img src="${b.cover}" class="w-full rounded-lg shadow-lg">
-                        <a href="/download/${b.id}" class="block mt-4 bg-primary text-white text-center py-3 rounded-lg font-medium hover:bg-blue-700">
-                            <i class="fas fa-download mr-2"></i> Download ${b.format}
-                        </a>
-                    </div>
-                    <div class="md:col-span-2">
-                        <h2 class="text-3xl font-bold font-display mb-2">${b.title}</h2>
-                        <p class="text-lg text-secondary mb-4">by ${b.author}</p>
-                        <p class="text-gray-700 mb-6">${b.description}</p>
-                        <div class="flex flex-wrap gap-2 mb-6">
-                            ${b.tags.split(',').map(t=>`<span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">${t.trim()}</span>`).join('')}
-                        </div>
-                    </div>
-                </div>`;
-            document.getElementById('book-modal').classList.remove('hidden');
-        }
-        document.getElementById('close-modal').addEventListener('click',()=>document.getElementById('book-modal').classList.add('hidden'));
+      <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-all">
+        <figure><img src="https://images.unsplash.com/photo-1491841573335-60e3d8d48b4e?w=600" alt="Deep Work" class="book-cover w-full rounded-t-xl"/></figure>
+        <div class="card-body p-4">
+          <h3 class="font-bold text-sm line-clamp-2">Deep Work</h3>
+          <p class="text-xs opacity-70">Cal Newport</p>
+          <a href="#" class="btn btn-primary btn-xs w-full mt-3">Read Now</a>
+        </div>
+      </div>
 
-        window.onload = () => {
-            document.getElementById('results-count').textContent = `${allBooks.length} books available`;
-            renderBooks(allBooks);
-        };
-    </script>
+      <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-all">
+        <figure><img src="https://images.unsplash.com/photo-1532012197267-da84d127e765?w=600" alt="Project Hail Mary" class="book-cover w-full rounded-t-xl"/></figure>
+        <div class="card-body p-4">
+          <h3 class="font-bold text-sm line-clamp-2">Project Hail Mary</h3>
+          <p class="text-xs opacity-70">Andy Weir</p>
+          <a href="#" class="btn btn-primary btn-xs w-full mt-3">Read Now</a>
+        </div>
+      </div>
+
+      <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-all">
+        <figure><img src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600" alt="Thinking Fast" class="book-cover w-full rounded-t-xl"/></figure>
+        <div class="card-body p-4">
+          <h3 class="font-bold text-sm line-clamp-2">Thinking, Fast and Slow</h3>
+          <p class="text-xs opacity-70">Daniel Kahneman</p>
+          <a href="#" class="btn btn-primary btn-xs w-full mt-3">Read Now</a>
+        </div>
+      </div>
+
+      <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-all">
+        <figure><img src="https://images.unsplash.com/photo-1544716278-ca5e3f3abd8c?w=600" alt="1984" class="book-cover w-full rounded-t-xl"/></figure>
+        <div class="card-body p-4">
+          <h3 class="font-bold text-sm line-clamp-2">1984</h3>
+          <p class="text-xs opacity-70">George Orwell</p>
+          <a href="#" class="btn btn-primary btn-xs w-full mt-3">Read Now</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Navigation (Optional) -->
+  <div class="btm-nav btm-nav-lg bg-base-200 shadow-2xl md:hidden">
+    <button class="active">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+      <span class="btm-nav-label">Home</span>
+    </button>
+    <button>
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+      <span class="btm-nav-label">Search</span>
+    </button>
+    <button>
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+      <span class="btm-nav-label">Upload</span>
+    </button>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer p-6 bg-base-200 text-center text-sm mt-auto">
+    <div>© 2025 EBook-Library • Free & Open Source • Made with passion</div>
+  </footer>
 </body>
 </html>

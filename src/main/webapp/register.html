@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register • E-Library</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
+</head>
+
+<body class="bg-gradient-to-br from-primary/10 via-base-100 to-secondary/10 min-h-screen flex items-center justify-center px-4 py-8">
+
+  <div class="card w-full max-w-md bg-base-100 shadow-2xl">
+
+    <div class="card-body p-8">
+      <!-- Header -->
+      <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold tracking-tight">E-Library</h1>
+        <p class="text-lg opacity-80 mt-2">Join thousands of readers today!</p>
+      </div>
+
+      <!-- Register Form -->
+      <form class="space-y-5" method="POST">
+        <div class="form-control">
+          <label class="label"><span class="label-text font-semibold">Full Name</span></label>
+          <input type="text" name="name" placeholder="John Doe" class="input input-bordered input-lg w-full" required />
+        </div>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text font-semibold">Email</span></label>
+          <input type="email" name="email" placeholder="you@example.com" class="input input-bordered input-lg w-full" required />
+        </div>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text font-semibold">Password</span></label>
+          <input type="password" name="password" placeholder="Minimum 6 characters" class="input input-bordered input-lg w-full" required minlength="6" />
+        </div>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text font-semibold">Confirm Password</span></label>
+          <input type="password" name="password2" placeholder="Type again" class="input input-bordered input-lg w-full" required />
+        </div>
+
+        <!-- Terms Checkbox -->
+        <div class="form-control">
+          <label class="cursor-pointer label justify-start gap-3">
+            <input type="checkbox" class="checkbox checkbox-primary" required />
+            <span class="label-text text-sm">
+              I agree to the <a href="#" class="link link-primary">Terms</a> & <a href="#" class="link link-primary">Privacy Policy</a>
+            </span>
+          </label>
+        </div>
+
+        <!-- Register Button -->
+        <div class="pt-4">
+          <button type="submit" class="btn btn-primary btn-lg w-full">
+            Create Account
+          </button>
+        </div>
+      </form>
+
+      <div class="divider text-sm opacity-70 mt-8">OR</div>
+
+      <!-- Social Register -->
+      <div class="grid grid-cols-2 gap-4">
+        <button class="btn btn-outline">
+          Google
+        </button>
+
+        <!-- Apple Login (same as login page) -->
+        <button class="btn bg-black hover:bg-gray-900 text-white border-0 flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.94-.17 1.18-1.14 3.77.17 5.34-.73 1.45-1.64 3.09-2.99 4.4l.01-.01zM13.01 4.56c-.7-1.84.29-3.77 1.74-4.56 1.82-.98 3.99.86 4.46 2.71.4 1.58-.62 3.14-2.06 3.98-1.58.94-3.45.04-4.14-2.13z"/>
+          </svg>
+          Sign in with Apple
+        </button>
+      </div>
+
+      <!-- Already have account -->
+      <div class="text-center mt-8">
+        <p class="text-sm opacity-80">
+          Already have an account? 
+          <a href="/login" class="link link-primary font-semibold hover:link-secondary">Login here</a>
+        </p>
+      </div>
+
+      <!-- Back to Home -->
+      <div class="text-center mt-6">
+        <a href="/" class="btn btn-ghost btn-sm">Back to Home</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Navigation -->
+  <div class="btm-nav btm-nav-lg bg-base-200 shadow-2xl md:hidden">
+    <button onclick="window.location.href='/'">
+      <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+    </button>
+    <button onclick="window.location.href='/login'">
+      <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+    </button>
+    <button class="active">
+      <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM12 14v7"/></svg>
+    </button>
+  </div>
+</body>
+</html>

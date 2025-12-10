@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Add Book from URL • E-Library</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
+</head>
+<body class="bg-base-100 min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <div class="navbar bg-base-200 shadow-lg sticky top-0 z-50">
+    <div class="flex-1"><a href="/" class="btn btn-ghost text-xl font-bold">E-Library</a></div>
+    <div class="flex-none">
+      <a href="/" class="btn btn-ghost btn-circle">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <div class="container mx-auto px-4 py-12 flex-1">
+    <div class="max-w-2xl mx-auto">
+
+      <div class="text-center mb-10">
+        <h1 class="text-4xl font-bold mb-4">Add Book from URL</h1>
+        <p class="text-lg opacity-80">Paste any public PDF link (Google Drive, Dropbox, etc.)</p>
+      </div>
+
+      <!-- Success message -->
+            <div class="alert alert-{{ 'success' if category == 'success' else 'error' }} shadow-lg mb-6">
+              <span>{{ message }}</span>
+            </div>
+
+      <form method="POST" class="space-y-6">
+        <div class="form-control">
+          <label class="label"><span class="label-text text-lg font-semibold">Direct PDF URL</span></label>
+          <input type="url" name="pdf_url" placeholder="https://..." class="input input-bordered input-lg w-full" required />
+          <label class="label"><span class="label-text-alt">Must be a direct link ending in .pdf</span></label>
+        </div>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text text-lg font-semibold">Book Title (optional)</span></label>
+          <input type="text" name="title" placeholder="Leave blank to auto-detect" class="input input-bordered w-full" />
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg w-full">
+          Add Book to Library
+        </button>
+      </form>
+
+      <div class="mt-10 prose prose-lg mx-auto text-center opacity-70">
+        <h3>Supported links:</h3>
+        <ul class="text-left inline-block">
+          <li>Google Drive (use "Anyone with link" + direct download)</li>
+          <li>         Dropbox (?dl=1)      </li>
+          <li>Mega, MediaFire, Zippyshare, etc.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Nav -->
+  <div class="btm-nav btm-nav-lg bg-base-200 md:hidden">
+    <button onclick="history.back()"><svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button>
+    <button class="active"><svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></button>
+  </div>
+</body>
+</html>
