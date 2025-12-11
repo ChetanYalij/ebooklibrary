@@ -11,13 +11,18 @@ import cloudinary.uploader
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'super-secret-elibrary-2025')
 
-# =========== DATABASE (Render + Local) ===========
-DATABASE_URL = os.getenv('DATABASE_URL')
+# =========== DATABASE (Render + Supabase + Local) ===========
+DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql:///elibrary')  # Supabase/Rende
 if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_pre_ping': True,
+    'pool_size': 20,
+    'max_overflow': 30
+}
 db = SQLAlchemy(app)
 
 # =========== CLOUDINARY ===========
@@ -31,13 +36,10 @@ cloudinary.config(
 # =========== BOOK MODEL ===========
 class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    author = db.Column(db.String(100), default='Community')
-    description = db.Column(db.Text)
-    file_path = db.Column(db.String(500), nullable=False)
-    cover_url = db.Column(db.String(500))
-    tags = db.Column(db.String(200))
-    download_count = db.Column(db.Integer, default=0)
+    title = db.Column(db.Text, nullable=False)
+    author = db.Column(db.Text, default='Community')
+    file_path = db.Column(db.Text, nullable=False)
+    cover_url = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
@@ -57,14 +59,13 @@ def index():
         query = query.filter(
             db.or_(
                 Book.title.ilike(f'%{search}%'),
-                Book.author.ilike(f'%{search}%'),
-                Book.tags.ilike(f'%{search}%')
+                Book.author.ilike(f'%{search}%')
             )
         )
     books = query.all()
-    return render_template('index.html', books=books, user=session.get('user'))
+    return render_template('index.html', books=books)
 
-# =========== ADD FROM URL (सर्वात महत्त्वाचं!) ===========
+# =========== ADD FROM URL ===========
 @app.route('/add-from-url', methods=['GET', 'POST'])
 def add_from_url():
     if request.method == 'POST':
@@ -72,11 +73,10 @@ def add_from_url():
         title = request.form.get('title', '').strip()
 
         if not pdf_url.lower().endswith('.pdf'):
-            flash('PDF लिंक असली पाहिजे (.pdf)', 'error')
+            flash('There should be a link PDF (.pdf)', 'error')
             return redirect(request.url)
 
         try:
-            # डाउनलोड कर
             headers = {'User-Agent': 'Mozilla/5.0'}
             r = requests.get(pdf_url, headers=headers, stream=True, timeout=30)
             r.raise_for_status()
@@ -86,7 +86,6 @@ def add_from_url():
                 for chunk in r.iter_content(8192):
                     f.write(chunk)
 
-            # टायटल काढ
             if not title:
                 try:
                     reader = PdfReader(temp_path)
@@ -94,7 +93,7 @@ def add_from_url():
                 except:
                     title = "Unknown Book"
 
-            # Cloudinary वर अपलोड
+            # Upload on Cloudinary
             upload_result = cloudinary.uploader.upload(
                 temp_path,
                 folder="elibrary/pdfs",
@@ -102,10 +101,8 @@ def add_from_url():
             )
             pdf_url_cloud = upload_result['secure_url']
 
-            # कव्हर
             cover = placeholder_cover(title)
 
-            # डेटाबेसमध्ये सेव्ह कर
             new_book = Book(
                 title=title,
                 author="Community",
@@ -115,12 +112,12 @@ def add_from_url():
             db.session.add(new_book)
             db.session.commit()
 
-            os.remove(temp_path)  # टेम्प फाइल डिलीट
-            flash(f'"{title}" यशस्वीरीत्या जोडले!', 'success')
+            os.remove(temp_path)
+            flash(f'"{title}" Added successfully!', 'success')
             return redirect('/')
 
         except Exception as e:
-            flash('काहीतरी चुकलं. लिंक सार्वजनिक असली पाहिजे.', 'error')
+            flas)('Error downloading or uploading. Link must be public.','Error')
 
     return render_template('add_from_url.html')
 
@@ -128,11 +125,9 @@ def add_from_url():
 @app.route('/download/<int:book_id>')
 def download(book_id):
     book = Book.query.get_or_404(book_id)
-    book.download_count += 1
-    db.session.commit()
     return redirect(book.file_path)
 
-# =========== LOGIN PAGE (साधी) ===========
+# =========== LOGIN ===========
 @app.route('/login')
 def login():
     return render_template('login.html')
@@ -145,6 +140,7 @@ def logout():
 # =========== CREATE TABLES ===========
 with app.app_context():
     db.create_all()
+    print("Tables created successfully!")
 
 # =========== RUN ===========
 if __name__ == '__main__':
