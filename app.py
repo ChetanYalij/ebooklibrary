@@ -1,30 +1,43 @@
 import os, requests, uuid
 from flask import Flask, render_template, request, redirect, session, flash, url_for
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import create_engine, or_
 from werkzeug.utils import secure_filename
 from PyPDF2 import PdfReader
 from datetime import datetime
 import cloudinary
 import cloudinary.uploader
 
+# =========== APP SETUP ===========
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'super-secret-elibrary-2025')
 
-# DATABASE_URL fix (postgres:// → postgresql://)
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql:///elibrary')  # For default local
+# =========== DATABASE (Render + Supabase + Local) - FULL FIX ===========
+DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql:///elibrary')  # Local fallback
 if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+
+# Engine with better pool settings (e3q8 error fix)
+engine = create_engine(
+    DATABASE_URL,
+    pool_size=10,        
+    max_overflow=20,
+    pool_timeout=30,
+    pool_pre_ping=True,    
+    pool_recycle=3600       
+)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_pre_ping': True,  # will check the connection
-    'pool_size': 10,        # Reduce pool size (for render)
-    'max_overflow': 20      # Reduce overflow
+    'pool_pre_ping': True,
+    'pool_size': 10,
+    'max_overflow': 20,
+    'pool_recycle': 3600
 }
 db = SQLAlchemy(app)
 
-# CLOUDINARY
+# =========== CLOUDINARY ===========
 cloudinary.config(
     cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
     api_key=os.getenv('CLOUDINARY_API_KEY'),
@@ -32,7 +45,7 @@ cloudinary.config(
     secure=True
 )
 
-# BOOK MODEL (तुझ्या SQL प्रमाणे)
+# =========== BOOK MODEL ===========
 class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.Text, nullable=False)
@@ -44,18 +57,18 @@ class Book(db.Model):
     def __repr__(self):
         return f"<Book {self.title}>"
 
-# PLACEHOLDER COVER
+# =========== PLACEHOLDER COVER ===========
 def placeholder_cover(text):
     return f"https://via.placeholder.com/300x450/6366f1/ffffff?text={text[:2].upper()}"
 
-# HOME
+# =========== HOME ===========
 @app.route('/')
 def index():
     search = request.args.get('search', '').strip()
     query = Book.query.order_by(Book.created_at.desc())
     if search:
         query = query.filter(
-            db.or_(
+            or_(
                 Book.title.ilike(f'%{search}%'),
                 Book.author.ilike(f'%{search}%')
             )
@@ -63,7 +76,7 @@ def index():
     books = query.all()
     return render_template('index.html', books=books)
 
-# ADD FROM URL
+# =========== ADD FROM URL  ===========
 @app.route('/add-from-url', methods=['GET', 'POST'])
 def add_from_url():
     if request.method == 'POST':
@@ -71,7 +84,7 @@ def add_from_url():
         title = request.form.get('title', '').strip()
 
         if not pdf_url.lower().endswith('.pdf'):
-            flash('There should be a PDF link(.pdf)', 'error')
+            flash('There should be a PDF link (.pdf)', 'error')
             return redirect(request.url)
 
         try:
@@ -98,7 +111,6 @@ def add_from_url():
                 resource_type="raw"
             )
             pdf_url_cloud = upload_result['secure_url']
-
             cover = placeholder_cover(title)
 
             new_book = Book(
@@ -115,17 +127,17 @@ def add_from_url():
             return redirect('/')
 
         except Exception as e:
-            flash(f'in download and upload Error: {str(e)}. Link must be public.', 'error')
+            flash(f'Error: {str(e)}. Link must be public.', 'error')
 
     return render_template('add_from_url.html')
 
-# DOWNLOAD
+# =========== DOWNLOAD ===========
 @app.route('/download/<int:book_id>')
 def download(book_id):
     book = Book.query.get_or_404(book_id)
     return redirect(book.file_path)
 
-# LOGIN
+# =========== LOGIN ===========
 @app.route('/login')
 def login():
     return render_template('login.html')
@@ -135,12 +147,12 @@ def logout():
     session.pop('user', None)
     return redirect('/')
 
-# CREATE TABLES (Render)
+# =========== CREATE TABLES (secure) ===========
 with app.app_context():
     db.create_all()
-    print("Tables created!")
+    print("Tables created successfully!")
 
-# RUN
+# =========== RUN (Render) ===========
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
