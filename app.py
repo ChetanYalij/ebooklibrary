@@ -11,9 +11,9 @@ import cloudinary.uploader
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'super-secret-elibrary-2025')
 
-# =========== DATABASE (Render + Local दोन्ही साठी काम करेल) ===========
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql:///elibrary')  # Render वर DATABASE_URL मिळेल
-if DATABASE_URL.startswith('postgres://'):
+# =========== DATABASE (Render + Local) ===========
+DATABASE_URL = os.getenv('DATABASE_URL')
+if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
