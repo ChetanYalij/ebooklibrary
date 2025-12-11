@@ -7,25 +7,24 @@ from datetime import datetime
 import cloudinary
 import cloudinary.uploader
 
-# =========== APP SETUP ===========
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'super-secret-elibrary-2025')
 
-# =========== DATABASE (Render + Supabase + Local) ===========
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql:///elibrary')  # Supabase/Rende
+# DATABASE_URL fix (postgres:// → postgresql://)
+DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql:///elibrary')  # For default local
 if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_pre_ping': True,
-    'pool_size': 20,
-    'max_overflow': 30
+    'pool_pre_ping': True,  # will check the connection
+    'pool_size': 10,        # Reduce pool size (for render)
+    'max_overflow': 20      # Reduce overflow
 }
 db = SQLAlchemy(app)
 
-# =========== CLOUDINARY ===========
+# CLOUDINARY
 cloudinary.config(
     cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
     api_key=os.getenv('CLOUDINARY_API_KEY'),
@@ -33,7 +32,7 @@ cloudinary.config(
     secure=True
 )
 
-# =========== BOOK MODEL ===========
+# BOOK MODEL (तुझ्या SQL प्रमाणे)
 class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.Text, nullable=False)
@@ -45,16 +44,15 @@ class Book(db.Model):
     def __repr__(self):
         return f"<Book {self.title}>"
 
-# =========== PLACEHOLDER COVER ===========
+# PLACEHOLDER COVER
 def placeholder_cover(text):
     return f"https://via.placeholder.com/300x450/6366f1/ffffff?text={text[:2].upper()}"
 
-# =========== HOME ===========
+# HOME
 @app.route('/')
 def index():
     search = request.args.get('search', '').strip()
     query = Book.query.order_by(Book.created_at.desc())
-
     if search:
         query = query.filter(
             db.or_(
@@ -65,7 +63,7 @@ def index():
     books = query.all()
     return render_template('index.html', books=books)
 
-# =========== ADD FROM URL ===========
+# ADD FROM URL
 @app.route('/add-from-url', methods=['GET', 'POST'])
 def add_from_url():
     if request.method == 'POST':
@@ -73,12 +71,12 @@ def add_from_url():
         title = request.form.get('title', '').strip()
 
         if not pdf_url.lower().endswith('.pdf'):
-            flash('There should be a link PDF (.pdf)', 'error')
+            flash('There should be a PDF link(.pdf)', 'error')
             return redirect(request.url)
 
         try:
-            headers = {'User-Agent': 'Mozilla/5.0'}
-            r = requests.get(pdf_url, headers=headers, stream=True, timeout=30)
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+            r = requests.get(pdf_url, headers=headers, stream=True, timeout=30, allow_redirects=True)
             r.raise_for_status()
 
             temp_path = f"temp_{uuid.uuid4().hex}.pdf"
@@ -93,7 +91,7 @@ def add_from_url():
                 except:
                     title = "Unknown Book"
 
-            # Upload on Cloudinary
+            # Upload Cloudinary
             upload_result = cloudinary.uploader.upload(
                 temp_path,
                 folder="elibrary/pdfs",
@@ -117,17 +115,17 @@ def add_from_url():
             return redirect('/')
 
         except Exception as e:
-            flas)('Error downloading or uploading. Link must be public.','Error')
+            flash(f'in download and upload Error: {str(e)}. Link must be public.', 'error')
 
     return render_template('add_from_url.html')
 
-# =========== DOWNLOAD ===========
+# DOWNLOAD
 @app.route('/download/<int:book_id>')
 def download(book_id):
     book = Book.query.get_or_404(book_id)
     return redirect(book.file_path)
 
-# =========== LOGIN ===========
+# LOGIN
 @app.route('/login')
 def login():
     return render_template('login.html')
@@ -137,12 +135,12 @@ def logout():
     session.pop('user', None)
     return redirect('/')
 
-# =========== CREATE TABLES ===========
+# CREATE TABLES (Render)
 with app.app_context():
     db.create_all()
-    print("Tables created successfully!")
+    print("Tables created!")
 
-# =========== RUN ===========
+# RUN
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
