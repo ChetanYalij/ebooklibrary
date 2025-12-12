@@ -1,7 +1,7 @@
 import os, requests, uuid
 from flask import Flask, render_template, request, redirect, session, flash, url_for
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import create_engine, or_
+from sqlalchemy import or_
 from werkzeug.utils import secure_filename
 from PyPDF2 import PdfReader
 from datetime import datetime
@@ -18,22 +18,14 @@ if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
 # Engine with better pool settings (e3q8 error fix)
-engine = create_engine(
-    DATABASE_URL,
-    pool_size=10,        
-    max_overflow=20,
-    pool_timeout=30,
-    pool_recycle=3600,
-    pool_pre_ping=True
-)
-
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
-    'pool_size': 10,
-    'max_overflow': 20,
+    'pool_size': 5,        
+    'max_overflow': 0,  
     'pool_timeout': 30,
-    'pool_recycle': 3600
+    'pool_recycle': 300
 }
 db = SQLAlchemy(app)
 
@@ -76,15 +68,15 @@ def index():
                     )
                 )
             books = query.all()
-
+        db.session.remove()
         return render_template('index.html', books=books)
-
     except Exception as e:
         db.session.rollback()
         flash(f'Database error: {str(e)}', 'error')
+        db.session.remove()
         return render_template('index.html', books=[])
 
-# =========== ADD FROM URL  ===========
+# =========== ADD FROM URL ===========
 @app.route('/add-from-url', methods=['GET', 'POST'])
 def add_from_url():
     if request.method == 'POST':
@@ -95,6 +87,7 @@ def add_from_url():
             flash('There should be a PDF link (.pdf)', 'error')
             return redirect(request.url)
 
+        temp_path = None
         try:
             headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
             r = requests.get(pdf_url, headers=headers, stream=True, timeout=30, allow_redirects=True)
@@ -118,30 +111,26 @@ def add_from_url():
                 resource_type="raw"
             )
             pdf_url_cloud = upload_result['secure_url']
-
             cover = placeholder_cover(title)
 
-            new_book = Book(
-                title=title,
-                author="Community",
-                file_path=pdf_url_cloud,
-                cover_url=cover
-            )
-            db.session.add(new_book)
-            db. session.commit()
+            with db.session.begin():
+                new_book = Book(
+                    title=title,
+                    author="Community",
+                    file_path=pdf_url_cloud,
+                    cover_url=cover
+                )
+                db.session.add(new_book)
 
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-
-            flash(f'"{title}" successfully connect!', 'success')
+            flash(f'"{title}" Added successfully!', 'success')
             return redirect('/')
 
         except Exception as e:
-           
-            if 'temp_path' in locals() and os.path.exists(temp_path):
-                os.remove(temp_path)
             flash(f'Error: {str(e)}. Link must be public.', 'error')
-            return redirect(request.url)
+        finally:
+            if temp_path and os.path.exists(temp_path):
+                os.remove(temp_path)
+            db.session.remove()
 
     return render_template('add_from_url.html')
 
@@ -161,12 +150,12 @@ def logout():
     session.pop('user', None)
     return redirect('/')
 
-# =========== CREATE TABLES (secure) ===========
+# =========== CREATE TABLES ===========
 with app.app_context():
     db.create_all()
     print("Tables created successfully!")
 
-# =========== RUN (Render) ===========
+# =========== RUN ===========
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
