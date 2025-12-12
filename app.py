@@ -97,15 +97,14 @@ def add_from_url():
             return redirect(request.url)
 
         try:
-            with db.session.begin():
-                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-                r = requests.get(pdf_url, headers=headers, stream=True, timeout=30, allow_redirects=True)
-                r.raise_for_status()
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            r = requests.get(pdf_url, headers=headers, stream=True, timeout=30, allow_redirects=True)
+            r.raise_for_status()
 
-                temp_path = f"temp_{uuid.uuid4().hex}.pdf"
-                with open(temp_path, 'wb') as f:
-                    for chunk in r.iter_content(8192):
-                        f.write(chunk)
+            temp_path = f"temp_{uuid.uuid4().hex}.pdf"
+            with open(temp_path, 'wb') as f:
+                for chunk in r.iter_content(8192):
+                    f.write(chunk)
 
             if not title:
                 try:
@@ -117,7 +116,7 @@ def add_from_url():
             # Upload Cloudinary
             upload_result = cloudinary.uploader.upload(
                 temp_path,
-                folder="ebooklibrary/pdfs",
+                folder="elibrary/pdfs",
                 resource_type="raw"
             )
             pdf_url_cloud = upload_result['secure_url']
@@ -130,17 +129,20 @@ def add_from_url():
                 cover_url=cover
             )
             db.session.add(new_book)
-
+            db.session.commit()
             os.remove(temp_path)
 
         flash(f'"{title}" Added successfully!', 'success')
         return redirect('/')
 
-        except Exception as e:
-            db.session.rollback()
+    except Exception as e:
+        if os.path.exists(temp_path):
+            try:
+               os.remove(temp_path)
+            except:
+                pass
             flash(f'Error: {str(e)}. Link must be public.', 'error')
-        finally:
-            db.session.remove()
+            return redirect(request.url)
 
     return render_template('add_from_url.html')
 
