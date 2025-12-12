@@ -23,16 +23,16 @@ engine = create_engine(
     pool_size=10,        
     max_overflow=20,
     pool_timeout=30,
-    pool_pre_ping=True,    
-    pool_recycle=3600       
+    pool_recycle=3600,
+    pool_pre_ping=True
 )
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
     'pool_size': 10,
     'max_overflow': 20,
+    'pool_timeout': 30,
     'pool_recycle': 3600
 }
 db = SQLAlchemy(app)
@@ -64,22 +64,31 @@ def placeholder_cover(text):
 # =========== HOME ===========
 @app.route('/')
 def index():
-    search = request.args.get('search', '').strip()
-    query = Book.query.order_by(Book.created_at.desc())
-    if search:
-        query = query.filter(
-            or_(
-                Book.title.ilike(f'%{search}%'),
-                Book.author.ilike(f'%{search}%')
-            )
-        )
-    books = query.all()
-    return render_template('index.html', books=books)
+    try:
+        with db.session.begin():
+            search = request.args.get('search', '').strip()
+            query = Book.query.order_by(Book.created_at.desc())
+            if search:
+                query = query.filter(
+                    or_(
+                        Book.title.ilike(f'%{search}%'),
+                        Book.author.ilike(f'%{search}%')
+                    )
+                )
+            books = query.all()
+
+        return render_template('index.html', books=books)
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Database error: {str(e)}', 'error')
+        return render_template('index.html', books=[])
 
 # =========== ADD FROM URL  ===========
 @app.route('/add-from-url', methods=['GET', 'POST'])
 def add_from_url():
     if request.method == 'POST':
+        
         pdf_url = request.form['pdf_url'].strip()
         title = request.form.get('title', '').strip()
 
@@ -88,14 +97,15 @@ def add_from_url():
             return redirect(request.url)
 
         try:
-            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-            r = requests.get(pdf_url, headers=headers, stream=True, timeout=30, allow_redirects=True)
-            r.raise_for_status()
+            with db.session.begin():
+                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+                r = requests.get(pdf_url, headers=headers, stream=True, timeout=30, allow_redirects=True)
+                r.raise_for_status()
 
-            temp_path = f"temp_{uuid.uuid4().hex}.pdf"
-            with open(temp_path, 'wb') as f:
-                for chunk in r.iter_content(8192):
-                    f.write(chunk)
+                temp_path = f"temp_{uuid.uuid4().hex}.pdf"
+                with open(temp_path, 'wb') as f:
+                    for chunk in r.iter_content(8192):
+                        f.write(chunk)
 
             if not title:
                 try:
@@ -107,7 +117,7 @@ def add_from_url():
             # Upload Cloudinary
             upload_result = cloudinary.uploader.upload(
                 temp_path,
-                folder="elibrary/pdfs",
+                folder="ebooklibrary/pdfs",
                 resource_type="raw"
             )
             pdf_url_cloud = upload_result['secure_url']
@@ -120,14 +130,17 @@ def add_from_url():
                 cover_url=cover
             )
             db.session.add(new_book)
-            db.session.commit()
 
             os.remove(temp_path)
-            flash(f'"{title}" Added successfully!', 'success')
-            return redirect('/')
+
+        flash(f'"{title}" Added successfully!', 'success')
+        return redirect('/')
 
         except Exception as e:
+            db.session.rollback()
             flash(f'Error: {str(e)}. Link must be public.', 'error')
+        finally:
+            db.session.remove()
 
     return render_template('add_from_url.html')
 
