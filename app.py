@@ -88,7 +88,6 @@ def index():
 @app.route('/add-from-url', methods=['GET', 'POST'])
 def add_from_url():
     if request.method == 'POST':
-        
         pdf_url = request.form['pdf_url'].strip()
         title = request.form.get('title', '').strip()
 
@@ -97,7 +96,7 @@ def add_from_url():
             return redirect(request.url)
 
         try:
-            headers = {'User-Agent': 'Mozilla/5.0'}
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
             r = requests.get(pdf_url, headers=headers, stream=True, timeout=30, allow_redirects=True)
             r.raise_for_status()
 
@@ -113,13 +112,13 @@ def add_from_url():
                 except:
                     title = "Unknown Book"
 
-            # Upload Cloudinary
             upload_result = cloudinary.uploader.upload(
                 temp_path,
                 folder="elibrary/pdfs",
                 resource_type="raw"
             )
             pdf_url_cloud = upload_result['secure_url']
+
             cover = placeholder_cover(title)
 
             new_book = Book(
@@ -129,18 +128,18 @@ def add_from_url():
                 cover_url=cover
             )
             db.session.add(new_book)
-            db.session.commit()
-            os.remove(temp_path)
+            db. session.commit()
 
-        flash(f'"{title}" Added successfully!', 'success')
-        return redirect('/')
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
 
-    except Exception as e:
-        if os.path.exists(temp_path):
-            try:
-               os.remove(temp_path)
-            except:
-                pass
+            flash(f'"{title}" successfully connect!', 'success')
+            return redirect('/')
+
+        except Exception as e:
+           
+            if 'temp_path' in locals() and os.path.exists(temp_path):
+                os.remove(temp_path)
             flash(f'Error: {str(e)}. Link must be public.', 'error')
             return redirect(request.url)
 
