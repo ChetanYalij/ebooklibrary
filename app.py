@@ -1,49 +1,33 @@
 import os, requests, uuid
-from flask import Flask, render_template, request, redirect, session, flash, url_for
+from flask import Flask, render_template, request, redirect, flash, url_for, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import or_
 from werkzeug.utils import secure_filename
 from PyPDF2 import PdfReader
 from datetime import datetime
-import cloudinary
-import cloudinary.uploader
 
 # =========== APP SETUP ===========
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', 'super-secret-elibrary-2025')
+app.secret_key = 'super-secret-elibrary-2025'
 
-# =========== DATABASE (Render + Supabase + Local) - FULL FIX ===========
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql:///elibrary')  # Local fallback
-if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
-    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
-
-# Engine with better pool settings (e3q8 error fix)
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+# =========== DATABASE - तुझ्या लॅपटॉपवर PostgreSQL ===========
+# तुझा पासवर्ड बदला जर वेगळा असेल
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:npg_pI3ObLUGiFs8@localhost/ebooklibrary'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_pre_ping': True,
-    'pool_size': 5,        
-    'max_overflow': 0,  
-    'pool_timeout': 30,
-    'pool_recycle': 300
-}
 db = SQLAlchemy(app)
 
-# =========== CLOUDINARY ===========
-cloudinary.config(
-    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
-    api_key=os.getenv('CLOUDINARY_API_KEY'),
-    api_secret=os.getenv('CLOUDINARY_API_SECRET'),
-    secure=True
-)
+# =========== पुस्तकं तुझ्या लॅपटॉपवर सेव्ह होतील ===========
+BOOKS_FOLDER = os.path.join('static', 'books')
+os.makedirs(BOOKS_FOLDER, exist_ok=True)
+app.config['BOOKS_FOLDER'] = BOOKS_FOLDER
 
 # =========== BOOK MODEL ===========
 class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.Text, nullable=False)
-    author = db.Column(db.Text, default='Community')
-    file_path = db.Column(db.Text, nullable=False)
-    cover_url = db.Column(db.Text)
+    title = db.Column(db.String(300), nullable=False)
+    author = db.Column(db.String(200), default='Community')
+    filename = db.Column(db.String(300), nullable=False)  # PDF फाइल नाव
+    cover_url = db.Column(db.String(500), default='https://via.placeholder.com/300x450/6366f1/ffffff?text=Book')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
@@ -53,28 +37,22 @@ class Book(db.Model):
 def placeholder_cover(text):
     return f"https://via.placeholder.com/300x450/6366f1/ffffff?text={text[:2].upper()}"
 
-# =========== HOME ===========
+# =========== HOME PAGE ===========
 @app.route('/')
 def index():
-    try:
-        with db.session.begin():
-            search = request.args.get('search', '').strip()
-            query = Book.query.order_by(Book.created_at.desc())
-            if search:
-                query = query.filter(
-                    or_(
-                        Book.title.ilike(f'%{search}%'),
-                        Book.author.ilike(f'%{search}%')
-                    )
-                )
-            books = query.all()
-        db.session.remove()
-        return render_template('index.html', books=books)
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Database error: {str(e)}', 'error')
-        db.session.remove()
-        return render_template('index.html', books=[])
+    search = request.args.get('search', '').strip()
+    query = Book.query.order_by(Book.created_at.desc())
+
+    if search:
+        query = query.filter(
+            or_(
+                Book.title.ilike(f'%{search}%'),
+                Book.author.ilike(f'%{search}%')
+            )
+        )
+
+    books = query.all()
+    return render_template('index.html', books=books, search=search)
 
 # =========== ADD FROM URL ===========
 @app.route('/add-from-url', methods=['GET', 'POST'])
@@ -84,78 +62,65 @@ def add_from_url():
         title = request.form.get('title', '').strip()
 
         if not pdf_url.lower().endswith('.pdf'):
-            flash('There should be a PDF link (.pdf)', 'error')
+            flash('फक्त PDF लिंक द्या (.pdf)', 'error')
             return redirect(request.url)
 
-        temp_path = None
         try:
             headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-            r = requests.get(pdf_url, headers=headers, stream=True, timeout=30, allow_redirects=True)
+            r = requests.get(pdf_url, headers=headers, stream=True, timeout=30)
             r.raise_for_status()
 
-            temp_path = f"temp_{uuid.uuid4().hex}.pdf"
-            with open(temp_path, 'wb') as f:
-                for chunk in r.iter_content(8192):
-                    f.write(chunk)
+            # युनिक फाइल नाव
+            filename = secure_filename(f"{uuid.uuid4().hex}.pdf")
+            file_path = os.path.join(app.config['BOOKS_FOLDER'], filename)
 
+            with open(file_path, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+
+            # टायटल ऑटो काढ
             if not title:
                 try:
-                    reader = PdfReader(temp_path)
-                    title = reader.metadata.title or "Unknown Book"
+                    reader = PdfReader(file_path)
+                    metadata = reader.metadata
+                    title = metadata.title if metadata and metadata.title else "अज्ञात पुस्तक"
                 except:
-                    title = "Unknown Book"
+                    title = "अज्ञात पुस्तक"
 
-            upload_result = cloudinary.uploader.upload(
-                temp_path,
-                folder="elibrary/pdfs",
-                resource_type="raw"
+            # डेटाबेसमध्ये सेव्ह कर
+            new_book = Book(
+                title=title.strip() or "अज्ञात पुस्तक",
+                author="Community",
+                filename=filename
             )
-            pdf_url_cloud = upload_result['secure_url']
-            cover = placeholder_cover(title)
+            db.session.add(new_book)
+            db.session.commit()
 
-            with db.session.begin():
-                new_book = Book(
-                    title=title,
-                    author="Community",
-                    file_path=pdf_url_cloud,
-                    cover_url=cover
-                )
-                db.session.add(new_book)
-
-            flash(f'"{title}" Added successfully!', 'success')
+            flash(f'"{title}" यशस्वीरीत्या जोडले!', 'success')
             return redirect('/')
 
+        except requests.exceptions.RequestException as e:
+            flash(f'डाउनलोड त्रुटी: {str(e)}. लिंक सार्वजनिक असली पाहिजे.', 'error')
         except Exception as e:
-            flash(f'Error: {str(e)}. Link must be public.', 'error')
-        finally:
-            if temp_path and os.path.exists(temp_path):
-                os.remove(temp_path)
-            db.session.remove()
+            flash(f'अज्ञात त्रुटी: {str(e)}', 'error')
 
     return render_template('add_from_url.html')
 
-# =========== DOWNLOAD ===========
-@app.route('/download/<int:book_id>')
-def download(book_id):
-    book = Book.query.get_or_404(book_id)
-    return redirect(book.file_path)
-
-# =========== LOGIN ===========
-@app.route('/login')
-def login():
-    return render_template('login.html')
-
-@app.route('/logout')
-def logout():
-    session.pop('user', None)
-    return redirect('/')
+# =========== READ BOOK ===========
+@app.route('/read/<filename>')
+def read_book(filename):
+    try:
+        return send_from_directory(app.config['BOOKS_FOLDER'], filename)
+    except:
+        flash('पुस्तक सापडले नाही!', 'error')
+        return redirect('/')
 
 # =========== CREATE TABLES ===========
 with app.app_context():
     db.create_all()
     print("Tables created successfully!")
 
-# =========== RUN ===========
+# =========== RUN APP ===========
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(debug=True)
