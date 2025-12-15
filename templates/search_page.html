@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Search Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .search-container {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .search-box {
+            padding: 12px;
+            font-size: 18px;
+            width: 60%;
+            max-width: 500px;
+            border-radius: 30px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .search-button {
+            padding: 12px 20px;
+            font-size: 18px;
+            border: none;
+            border-radius: 30px;
+            background-color: #4285f4;
+            color: white;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .results {
+            text-align: left;
+        }
+        .result-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .result-title {
+            font-size: 18px;
+            color: #1a0dab;
+            margin: 0 0 5px 0;
+        }
+        .result-url {
+            color: #006621;
+            font-size: 14px;
+        }
+        .result-snippet {
+            color: #545454;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="search-container">
+        <h1>My Search Engine</h1>
+        <input type="text" class="search-box" placeholder="Search..." id="query">
+        <button class="search-button" onclick="performSearch()">Search</button>
+    </div>
+
+    <div class="results" id="results">
+        <!-- Results will appear here after "search" -->
+        <div class="result-item">
+            <h3 class="result-title">Example Result 1</h3>
+            <div class="result-url">https://example.com/page1</div>
+            <p class="result-snippet">This is a sample search result snippet. In a real search engine, this would show relevant text from the page matching your query.</p>
+        </div>
+        <div class="result-item">
+            <h3 class="result-title">Example Result 2</h3>
+            <div class="result-url">https://example.com/page2</div>
+            <p class="result-snippet">Another mock result to show how the "after search" screen looks with multiple results listed below the search bar.</p>
+        </div>
+        <div class="result-item">
+            <h3 class="result-title">Example Result 3</h3>
+            <div class="result-url">https://example.com/page3</div>
+            <p class="result-snippet">Feel free to replace these with real dynamic results using JavaScript and an API.</p>
+        </div>
+    </div>
+
+    <script>
+        function performSearch() {
+            const query = document.getElementById('query').value;
+            if (query) {
+                alert('Searching for: ' + query + '\n(In a real app, this would fetch and display actual results here.)');
+            }
+        }
+    </script>
+
+</body>
+</html>
