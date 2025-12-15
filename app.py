@@ -1,163 +1,168 @@
-import os, requests, uuid, json
-from flask import Flask, render_template, request, redirect, flash, url_for, send_from_directory
+import os
+import json
+from flask import Flask, render_template, request, flash, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import or_
-from werkzeug.utils import secure_filename
-from PyPDF2 import PdfReader
-from datetime import datetime
+import cloudinary
+import cloudinary.uploader
 
-# =========== APP SETUP ===========
+# ------------------- Flask App Setup -------------------
 app = Flask(__name__)
-app.secret_key = 'super-secret-elibrary-2025'
+app.secret_key = os.getenv('SECRET_KEY', 'your-fallback-secret-key-change-this')
 
-# =========== DATABASE ===========
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:npg_pI3ObLUGiFs8@localhost/ebooklibrary'
+# ------------------- Cloudinary Config -------------------
+cloudinary.config(
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.getenv('CLOUDINARY_API_KEY'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET')
+)
+
+# ------------------- Database Config (Important for Render!) -------------------
+database_url = os.getenv('DATABASE_URL')
+
+if database_url and database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_pre_ping': True,   
+    'pool_recycle': 300      
+}
+
 db = SQLAlchemy(app)
 
-# =========== STORAGE ===========
-BOOKS_FOLDER = os.path.join('static', 'books')
-os.makedirs(BOOKS_FOLDER, exist_ok=True)
-app.config['BOOKS_FOLDER'] = BOOKS_FOLDER
-
-# =========== BOOK MODEL ===========
+# ------------------- Book Model -------------------
 class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(300), nullable=False)
-    author = db.Column(db.String(200), default='Community')
-    filename = db.Column(db.String(300), nullable=False)
-    cover_url = db.Column(db.String(500), default='https://via.placeholder.com/300x450/6366f1/ffffff?text=Book')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    title = db.Column(db.String(200), nullable=False)
+    author = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    category = db.Column(db.String(50), default='Uncategorized')
+    cover_url = db.Column(db.String(500), nullable=True)
+    pdf_url = db.Column(db.String(500), nullable=True)
 
-# =========== HOME ===========
+    def __repr__(self):
+        return f"<Book {self.title}>"
+
+# ------------------- Create Tables (safe method) -------------------
+# Do not put db.create_all() at the end of the file or at import time!
+# Run in app context
+@app.before_first_request
+def create_tables():
+    db.create_all()
+    print("Database tables created successfully!")
+
+# ------------------- Routes -------------------
+
 @app.route('/')
 def index():
-    search = request.args.get('search', '').strip()
-    query = Book.query.order_by(Book.created_at.desc())
+    books = Book.query.all()
+    return render_template('index.html', books=books)
 
-    if search:
-        query = query.filter(
-            or_(
-                Book.title.ilike(f'%{search}%'),
-                Book.author.ilike(f'%{search}%')
-            )
-        )
-
-    books = query.all()
-    return render_template('index.html', books=books, search=search)
-
-# =====================================================
-# ✅ SINGLE BOOK UPLOAD
-# =====================================================
+# Single book upload
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
     if request.method == 'POST':
-        title = request.form['title'].strip()
-        author = request.form['author'].strip()
+        title = request.form['title']
+        author = request.form['author']
+        description = request.form.get('description', '')
+        category = request.form.get('category', 'Uncategorized')
 
-        if not title or not author:
-            flash('Title आणि Author आवश्यक आहेत!')
-            return redirect(request.url)
-
+        # Duplicate Check
         if Book.query.filter_by(title=title, author=author).first():
-            flash('हे पुस्तक आधीच आहे!')
-            return redirect(request.url)
+            flash('This book is already in the database!')
+            return redirect(url_for('upload'))
 
-        # PDF Upload
-        pdf = request.files.get('pdf')
-        if not pdf or pdf.filename == '':
-            flash('PDF फाइल आवश्यक आहे!')
-            return redirect(request.url)
+        cover_url = None
+        pdf_url = None
 
-        filename = secure_filename(f"{uuid.uuid4().hex}.pdf")
-        pdf.save(os.path.join(app.config['BOOKS_FOLDER'], filename))
+        # Upload cover
+        if 'cover' in request.files:
+            cover_file = request.files['cover']
+            if cover_file.filename != '':
+                cover_upload = cloudinary.uploader.upload(cover_file)
+                cover_url = cover_upload['secure_url']
 
+        # Upload PDF
+        if 'pdf' in request.files:
+            pdf_file = request.files['pdf']
+            if pdf_file.filename != '':
+                pdf_upload = cloudinary.uploader.upload(pdf_file, resource_type="raw")
+                pdf_url = pdf_upload['secure_url']
+            else:
+                flash('PDF file required!')
+                return redirect(url_for('upload'))
+
+        # Save new book
         new_book = Book(
             title=title,
             author=author,
-            filename=filename
+            description=description,
+            category=category,
+            cover_url=cover_url,
+            pdf_url=pdf_url
         )
-
         db.session.add(new_book)
         db.session.commit()
 
-        flash('पुस्तक यशस्वी अपलोड झाले!')
+        flash('Book uploaded successfully!')
         return redirect(url_for('index'))
 
     return render_template('upload.html')
 
-# =====================================================
-# ✅ JSON MULTIPLE BOOK UPLOAD
-# =====================================================
+# Upload multiple books with JSON
 @app.route('/upload_json', methods=['GET', 'POST'])
 def upload_json():
     if request.method == 'POST':
-        file = request.files.get('json_file')
+        if 'json_file' not in request.files:
+            flash('JSON file not selected!')
+            return redirect(request.url)
 
-        if not file or not file.filename.endswith('.json'):
-            flash('कृपया वैध JSON फाइल निवडा!')
+        file = request.files['json_file']
+        if file.filename == '' or not file.filename.lower().endswith('.json'):
+            flash('Please select a valid .json file!')
             return redirect(request.url)
 
         try:
             data = json.load(file)
             if not isinstance(data, list):
-                flash('JSON मध्ये array असावा!')
+                flash('JSON should contain a list of books (array)!')
                 return redirect(request.url)
 
-            added, skipped = 0, 0
+            added_count = 0
+            skipped_count = 0
 
-            for item in data:
-                title = item.get('title')
-                author = item.get('author', 'Community')
-                pdf_url = item.get('pdf_url')
-
-                if not title or not pdf_url:
-                    skipped += 1
+            for book_data in data:
+                title = book_data.get('title')
+                author = book_data.get('author')
+                if not title or not author:
                     continue
 
                 if Book.query.filter_by(title=title, author=author).first():
-                    skipped += 1
+                    skipped_count += 1
                     continue
 
-                # PDF download
-                r = requests.get(pdf_url, stream=True, timeout=30)
-                r.raise_for_status()
-
-                filename = secure_filename(f"{uuid.uuid4().hex}.pdf")
-                path = os.path.join(app.config['BOOKS_FOLDER'], filename)
-
-                with open(path, 'wb') as f:
-                    for chunk in r.iter_content(8192):
-                        f.write(chunk)
-
-                book = Book(
+                new_book = Book(
                     title=title,
                     author=author,
-                    filename=filename,
-                    cover_url=item.get('cover_url', Book.cover_url.default.arg)
+                    description=book_data.get('description', ''),
+                    category=book_data.get('category', 'Uncategorized'),
+                    cover_url=book_data.get('cover_url'),
+                    pdf_url=book_data.get('pdf_url')
                 )
-                db.session.add(book)
-                added += 1
+                db.session.add(new_book)
+                added_count += 1
 
             db.session.commit()
-            flash(f'यशस्वी! {added} पुस्तके जोडली, {skipped} स्किप.')
-
+            flash(f'Success! {added_count} new books added. {skipped_count} already existed so skipped.')
+        except json.JSONDecodeError:
+            flash('The JSON file is in the wrong format.!')
         except Exception as e:
-            flash(f'त्रुटी: {str(e)}')
+            flash(f'error: {str(e)}')
 
         return redirect(url_for('index'))
 
     return render_template('upload_json.html')
 
-# =========== READ BOOK ===========
-@app.route('/read/<filename>')
-def read_book(filename):
-    return send_from_directory(app.config['BOOKS_FOLDER'], filename)
-
-# =========== INIT DB ===========
-with app.app_context():
-    db.create_all()
-
-# =========== RUN ===========
 if __name__ == '__main__':
     app.run(debug=True)
