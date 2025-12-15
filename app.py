@@ -47,8 +47,8 @@ class Book(db.Model):
 # ------------------- Create Tables (safe method) -------------------
 # Do not put db.create_all() at the end of the file or at import time!
 # Run in app context
-@app.before_first_request
-def create_tables():
+# Create database tables on startup (replaces @before_first_request)
+with app.app_context():
     db.create_all()
     print("Database tables created successfully!")
 
