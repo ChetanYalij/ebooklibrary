@@ -1,4 +1,4 @@
-import os, requests, uuid
+import os, requests, uuid, json
 from flask import Flask, render_template, request, redirect, flash, url_for, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import or_
@@ -10,13 +10,12 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = 'super-secret-elibrary-2025'
 
-# =========== DATABASE - तुझ्या लॅपटॉपवर PostgreSQL ===========
-# तुझा पासवर्ड बदला जर वेगळा असेल
+# =========== DATABASE ===========
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:npg_pI3ObLUGiFs8@localhost/ebooklibrary'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# =========== पुस्तकं तुझ्या लॅपटॉपवर सेव्ह होतील ===========
+# =========== STORAGE ===========
 BOOKS_FOLDER = os.path.join('static', 'books')
 os.makedirs(BOOKS_FOLDER, exist_ok=True)
 app.config['BOOKS_FOLDER'] = BOOKS_FOLDER
@@ -26,18 +25,11 @@ class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(300), nullable=False)
     author = db.Column(db.String(200), default='Community')
-    filename = db.Column(db.String(300), nullable=False)  # PDF फाइल नाव
+    filename = db.Column(db.String(300), nullable=False)
     cover_url = db.Column(db.String(500), default='https://via.placeholder.com/300x450/6366f1/ffffff?text=Book')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    def __repr__(self):
-        return f"<Book {self.title}>"
-
-# =========== PLACEHOLDER COVER ===========
-def placeholder_cover(text):
-    return f"https://via.placeholder.com/300x450/6366f1/ffffff?text={text[:2].upper()}"
-
-# =========== HOME PAGE ===========
+# =========== HOME ===========
 @app.route('/')
 def index():
     search = request.args.get('search', '').strip()
@@ -54,73 +46,118 @@ def index():
     books = query.all()
     return render_template('index.html', books=books, search=search)
 
-# =========== ADD FROM URL ===========
-@app.route('/add-from-url', methods=['GET', 'POST'])
-def add_from_url():
+# =====================================================
+# ✅ SINGLE BOOK UPLOAD
+# =====================================================
+@app.route('/upload', methods=['GET', 'POST'])
+def upload():
     if request.method == 'POST':
-        pdf_url = request.form['pdf_url'].strip()
-        title = request.form.get('title', '').strip()
+        title = request.form['title'].strip()
+        author = request.form['author'].strip()
 
-        if not pdf_url.lower().endswith('.pdf'):
-            flash('फक्त PDF लिंक द्या (.pdf)', 'error')
+        if not title or not author:
+            flash('Title आणि Author आवश्यक आहेत!')
+            return redirect(request.url)
+
+        if Book.query.filter_by(title=title, author=author).first():
+            flash('हे पुस्तक आधीच आहे!')
+            return redirect(request.url)
+
+        # PDF Upload
+        pdf = request.files.get('pdf')
+        if not pdf or pdf.filename == '':
+            flash('PDF फाइल आवश्यक आहे!')
+            return redirect(request.url)
+
+        filename = secure_filename(f"{uuid.uuid4().hex}.pdf")
+        pdf.save(os.path.join(app.config['BOOKS_FOLDER'], filename))
+
+        new_book = Book(
+            title=title,
+            author=author,
+            filename=filename
+        )
+
+        db.session.add(new_book)
+        db.session.commit()
+
+        flash('पुस्तक यशस्वी अपलोड झाले!')
+        return redirect(url_for('index'))
+
+    return render_template('upload.html')
+
+# =====================================================
+# ✅ JSON MULTIPLE BOOK UPLOAD
+# =====================================================
+@app.route('/upload_json', methods=['GET', 'POST'])
+def upload_json():
+    if request.method == 'POST':
+        file = request.files.get('json_file')
+
+        if not file or not file.filename.endswith('.json'):
+            flash('कृपया वैध JSON फाइल निवडा!')
             return redirect(request.url)
 
         try:
-            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-            r = requests.get(pdf_url, headers=headers, stream=True, timeout=30)
-            r.raise_for_status()
+            data = json.load(file)
+            if not isinstance(data, list):
+                flash('JSON मध्ये array असावा!')
+                return redirect(request.url)
 
-            # युनिक फाइल नाव
-            filename = secure_filename(f"{uuid.uuid4().hex}.pdf")
-            file_path = os.path.join(app.config['BOOKS_FOLDER'], filename)
+            added, skipped = 0, 0
 
-            with open(file_path, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    if chunk:
+            for item in data:
+                title = item.get('title')
+                author = item.get('author', 'Community')
+                pdf_url = item.get('pdf_url')
+
+                if not title or not pdf_url:
+                    skipped += 1
+                    continue
+
+                if Book.query.filter_by(title=title, author=author).first():
+                    skipped += 1
+                    continue
+
+                # PDF download
+                r = requests.get(pdf_url, stream=True, timeout=30)
+                r.raise_for_status()
+
+                filename = secure_filename(f"{uuid.uuid4().hex}.pdf")
+                path = os.path.join(app.config['BOOKS_FOLDER'], filename)
+
+                with open(path, 'wb') as f:
+                    for chunk in r.iter_content(8192):
                         f.write(chunk)
 
-            # टायटल ऑटो काढ
-            if not title:
-                try:
-                    reader = PdfReader(file_path)
-                    metadata = reader.metadata
-                    title = metadata.title if metadata and metadata.title else "अज्ञात पुस्तक"
-                except:
-                    title = "अज्ञात पुस्तक"
+                book = Book(
+                    title=title,
+                    author=author,
+                    filename=filename,
+                    cover_url=item.get('cover_url', Book.cover_url.default.arg)
+                )
+                db.session.add(book)
+                added += 1
 
-            # डेटाबेसमध्ये सेव्ह कर
-            new_book = Book(
-                title=title.strip() or "अज्ञात पुस्तक",
-                author="Community",
-                filename=filename
-            )
-            db.session.add(new_book)
             db.session.commit()
+            flash(f'यशस्वी! {added} पुस्तके जोडली, {skipped} स्किप.')
 
-            flash(f'"{title}" यशस्वीरीत्या जोडले!', 'success')
-            return redirect('/')
-
-        except requests.exceptions.RequestException as e:
-            flash(f'डाउनलोड त्रुटी: {str(e)}. लिंक सार्वजनिक असली पाहिजे.', 'error')
         except Exception as e:
-            flash(f'अज्ञात त्रुटी: {str(e)}', 'error')
+            flash(f'त्रुटी: {str(e)}')
 
-    return render_template('add_from_url.html')
+        return redirect(url_for('index'))
+
+    return render_template('upload_json.html')
 
 # =========== READ BOOK ===========
 @app.route('/read/<filename>')
 def read_book(filename):
-    try:
-        return send_from_directory(app.config['BOOKS_FOLDER'], filename)
-    except:
-        flash('पुस्तक सापडले नाही!', 'error')
-        return redirect('/')
+    return send_from_directory(app.config['BOOKS_FOLDER'], filename)
 
-# =========== CREATE TABLES ===========
+# =========== INIT DB ===========
 with app.app_context():
     db.create_all()
-    print("Tables created successfully!")
 
-# =========== RUN APP ===========
+# =========== RUN ===========
 if __name__ == '__main__':
     app.run(debug=True)
