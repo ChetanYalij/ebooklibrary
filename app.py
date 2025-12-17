@@ -4,10 +4,14 @@ from flask import Flask, render_template, request, flash, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 import cloudinary
 import cloudinary.uploader
+from dotenv import load_dotenv
+
+# ------------------- Load .env (local only) -------------------
+load_dotenv()
 
 # ------------------- Flask App Setup -------------------
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', 'your-fallback-secret-key-change-this')
+app.secret_key = os.getenv('SECRET_KEY', 'change-this-secret-key')
 
 # ------------------- Cloudinary Config -------------------
 cloudinary.config(
@@ -16,17 +20,21 @@ cloudinary.config(
     api_secret=os.getenv('CLOUDINARY_API_SECRET')
 )
 
-# ------------------- Database Config (Important for Render!) -------------------
-database_url = os.getenv('DATABASE_URL')
+# ------------------- Database Config (Render + Local) -------------------
+DATABASE_URL = os.getenv('DATABASE_URL')
 
-if database_url and database_url.startswith('postgres://'):
-    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+if DATABASE_URL:
+    # Render PostgreSQL fix
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://chetan-yalij:3151@localhost:5432/ebooklib'
 
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_pre_ping': True,   
-    'pool_recycle': 300      
+    'pool_pre_ping': True,
+    'pool_recycle': 300
 }
 
 db = SQLAlchemy(app)
@@ -36,21 +44,18 @@ class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     author = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text, nullable=True)
+    description = db.Column(db.Text)
     category = db.Column(db.String(50), default='Uncategorized')
-    cover_url = db.Column(db.String(500), nullable=True)
-    pdf_url = db.Column(db.String(500), nullable=True)
+    cover_url = db.Column(db.String(500))
+    pdf_url = db.Column(db.String(500))
 
     def __repr__(self):
         return f"<Book {self.title}>"
 
-# ------------------- Create Tables (safe method) -------------------
-# Do not put db.create_all() at the end of the file or at import time!
-# Run in app context
-# Create database tables on startup (replaces @before_first_request)
+# ------------------- Create Tables (SAFE) -------------------
 with app.app_context():
     db.create_all()
-    print("Database tables created successfully!")
+    print("✅ Database tables ready")
 
 # ------------------- Routes -------------------
 
@@ -59,7 +64,15 @@ def index():
     books = Book.query.all()
     return render_template('index.html', books=books)
 
-# Single book upload
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+@app.route('/contact')
+def contact():
+    return render_template('contact.html')
+
+# ------------------- Upload Single Book -------------------
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
     if request.method == 'POST':
@@ -68,32 +81,32 @@ def upload():
         description = request.form.get('description', '')
         category = request.form.get('category', 'Uncategorized')
 
-        # Duplicate Check
+        # Duplicate check
         if Book.query.filter_by(title=title, author=author).first():
-            flash('This book is already in the database!')
+            flash('This book already exists!')
             return redirect(url_for('upload'))
 
         cover_url = None
         pdf_url = None
 
         # Upload cover
-        if 'cover' in request.files:
-            cover_file = request.files['cover']
-            if cover_file.filename != '':
-                cover_upload = cloudinary.uploader.upload(cover_file)
-                cover_url = cover_upload['secure_url']
+        cover_file = request.files.get('cover')
+        if cover_file and cover_file.filename:
+            cover_upload = cloudinary.uploader.upload(cover_file)
+            cover_url = cover_upload.get('secure_url')
 
         # Upload PDF
-        if 'pdf' in request.files:
-            pdf_file = request.files['pdf']
-            if pdf_file.filename != '':
-                pdf_upload = cloudinary.uploader.upload(pdf_file, resource_type="raw")
-                pdf_url = pdf_upload['secure_url']
-            else:
-                flash('PDF file required!')
-                return redirect(url_for('upload'))
+        pdf_file = request.files.get('pdf')
+        if not pdf_file or not pdf_file.filename:
+            flash('PDF file is required!')
+            return redirect(url_for('upload'))
 
-        # Save new book
+        pdf_upload = cloudinary.uploader.upload(
+            pdf_file, resource_type="raw"
+        )
+        pdf_url = pdf_upload.get('secure_url')
+
+        # Save book
         new_book = Book(
             title=title,
             author=author,
@@ -102,6 +115,7 @@ def upload():
             cover_url=cover_url,
             pdf_url=pdf_url
         )
+
         db.session.add(new_book)
         db.session.commit()
 
@@ -110,59 +124,56 @@ def upload():
 
     return render_template('upload.html')
 
-# Upload multiple books with JSON
+# ------------------- Upload Multiple Books via JSON -------------------
 @app.route('/upload_json', methods=['GET', 'POST'])
 def upload_json():
     if request.method == 'POST':
-        if 'json_file' not in request.files:
-            flash('JSON file not selected!')
-            return redirect(request.url)
+        file = request.files.get('json_file')
 
-        file = request.files['json_file']
-        if file.filename == '' or not file.filename.lower().endswith('.json'):
-            flash('Please select a valid .json file!')
+        if not file or not file.filename.endswith('.json'):
+            flash('Please upload a valid JSON file!')
             return redirect(request.url)
 
         try:
             data = json.load(file)
             if not isinstance(data, list):
-                flash('JSON should contain a list of books (array)!')
+                flash('JSON must contain a list of books!')
                 return redirect(request.url)
 
-            added_count = 0
-            skipped_count = 0
+            added = 0
+            skipped = 0
 
-            for book_data in data:
-                title = book_data.get('title')
-                author = book_data.get('author')
+            for book in data:
+                title = book.get('title')
+                author = book.get('author')
+
                 if not title or not author:
                     continue
 
                 if Book.query.filter_by(title=title, author=author).first():
-                    skipped_count += 1
+                    skipped += 1
                     continue
 
-                new_book = Book(
+                db.session.add(Book(
                     title=title,
                     author=author,
-                    description=book_data.get('description', ''),
-                    category=book_data.get('category', 'Uncategorized'),
-                    cover_url=book_data.get('cover_url'),
-                    pdf_url=book_data.get('pdf_url')
-                )
-                db.session.add(new_book)
-                added_count += 1
+                    description=book.get('description', ''),
+                    category=book.get('category', 'Uncategorized'),
+                    cover_url=book.get('cover_url'),
+                    pdf_url=book.get('pdf_url')
+                ))
+                added += 1
 
             db.session.commit()
-            flash(f'Success! {added_count} new books added. {skipped_count} already existed so skipped.')
-        except json.JSONDecodeError:
-            flash('The JSON file is in the wrong format.!')
+            flash(f"{added} books added, {skipped} skipped (duplicates)")
+
         except Exception as e:
-            flash(f'error: {str(e)}')
+            flash(f"Error: {str(e)}")
 
         return redirect(url_for('index'))
 
-    return render_template('upload_json.html')
+    return render_template('upload.html')
 
+# ------------------- Run App -------------------
 if __name__ == '__main__':
     app.run(debug=True)

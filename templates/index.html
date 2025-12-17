@@ -1,140 +1,168 @@
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>E-BookLibrary • Free Books</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>E-BookLibrary • Free Books</title>
 
-  <!-- Tailwind + DaisyUI -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
-
-  <style>
-    .line-clamp-2 {
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    .book-cover {
-      aspect-ratio: 3/4;
-      object-fit: cover;
-    }
-  </style>
+    <!-- Tailwind + DaisyUI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
 </head>
 
 <body class="bg-base-100 text-base-content min-h-screen flex flex-col">
 
-  <!-- ================= NAVBAR ================= -->
-  <div class="navbar bg-base-200 shadow-lg sticky top-0 z-50">
+<!-- ================= NAVBAR ================= -->
+<div class="navbar bg-base-200 shadow-lg sticky top-0 z-50">
     <div class="flex-1">
-      <a href="{{ url_for('index') }}" class="btn btn-ghost text-xl font-bold">
-        E-Library
-      </a>
+        <a href="{{ url_for('index') }}" class="btn btn-ghost text-xl font-bold">
+            E-Library
+        </a>
     </div>
 
-    <div class="flex-none flex items-center gap-2">
-      <!-- Mobile Menu -->
-      <div class="dropdown dropdown-end">
-        <label tabindex="0" class="btn btn-ghost btn-circle">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-               viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </label>
-
-        <ul tabindex="0"
-            class="menu dropdown-content mt-3 p-4 shadow bg-base-100 rounded-box w-56 gap-2">
-
-          <li>
-            <a href="{{ url_for('index') }}" class="justify-between">
-              Home <span class="badge badge-sm">Active</span>
-            </a>
-          </li>
-
-          <!-- ✅ Single Book Upload -->
-          <li>
-            <a href="{{ url_for('upload') }}">
-             Upload a new book
-            </a>
-          </li>
-
-          <li><a href="/login">Login</a></li>
-          <li><a href="/register">Register</a></li>
-
-          <hr class="my-2">
-
-          <!-- Theme Switch -->
-          <li>
-            <label class="swap swap-rotate">
-              <input type="checkbox" class="theme-controller" value="dark" />
-              <svg class="swap-on fill-current w-5 h-5" viewBox="0 0 24 24">
-                <path d="M12,18a6,6,0,1,1,6-6A6,6,0,0,1,12,18Z"/>
-              </svg>
-              <svg class="swap-off fill-current w-5 h-5" viewBox="0 0 24 24">
-                <path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73
-                         A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2
-                         A1,1,0,0,0,8,2.36A10.14,10.14,0,1,0,22,14.05
-                         A1,1,0,0,0,21.64,13Z"/>
-              </svg>
+    <!-- Three Dots Menu -->
+    <div class="flex-none">
+        <div class="dropdown dropdown-end">
+            <label tabindex="0" class="btn btn-ghost btn-circle">
+                <!-- Three dots icon -->
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     class="h-6 w-6"
+                     viewBox="0 0 24 24"
+                     fill="currentColor">
+                    <circle cx="12" cy="5" r="2"/>
+                    <circle cx="12" cy="12" r="2"/>
+                    <circle cx="12" cy="19" r="2"/>
+                </svg>
             </label>
-          </li>
 
-        </ul>
-      </div>
+            <ul tabindex="0"
+                class="menu dropdown-content mt-3 p-4 shadow bg-base-100 rounded-box w-56 gap-2">
+
+                <li><a href="/">Home</a></li>
+                <li><a href="{{ url_for('upload') }}">Upload a new book</a></li>
+                <li><a href="/login">Login</a></li>
+                <li><a href="/register">Register</a></li>
+
+                <hr class="my-2">
+
+                <!-- Dark Mode -->
+                <li>
+                    <label class="flex items-center justify-between cursor-pointer">
+                        <span>Dark Mode</span>
+                        <input type="checkbox"
+                               class="toggle theme-controller"
+                               value="dark" />
+                    </label>
+                </li>
+            </ul>
+        </div>
     </div>
-  </div>
-  <!-- ================= END NAVBAR ================= -->
+</div>
+<!-- ================= END NAVBAR ================= -->
 
-  <!-- ================= HERO ================= -->
-  <div class="hero min-h-[70vh] bg-gradient-to-b from-primary/10 to-base-100">
+<!-- ================= HERO ================= -->
+<div class="hero min-h-[70vh] bg-gradient-to-b from-primary/10 to-base-100">
     <div class="hero-content text-center px-6">
-      <div class="max-w-lg">
-        <h1 class="text-4xl sm:text-5xl font-extrabold mb-4">
-          Your Free Digital Library
-        </h1>
-        <p class="text-lg opacity-80 mb-8">
-          Read thousands of books anytime, anywhere — completely free.
-        </p>
+        <div class="max-w-lg">
 
-        <form class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-          <input type="text" name="search"
-                 placeholder="Search books..."
-                 class="input input-bordered input-lg w-full"/>
-          <button class="btn btn-primary btn-lg">Search</button>
-        </form>
-      </div>
+            <h1 class="text-4xl sm:text-5xl font-extrabold mb-4">
+                Your Free Digital Library
+            </h1>
+
+            <p class="text-lg opacity-80 mb-8">
+                Read thousands of books anytime, anywhere — completely free.
+            </p>
+
+            <!-- Search -->
+            <form class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                <input type="text"
+                       name="search"
+                       placeholder="Search books..."
+                       class="input input-bordered input-lg w-full"/>
+                <button class="btn btn-primary btn-lg">
+                    Search
+                </button>
+            </form>
+
+            <!-- Categories DROPDOWN -->
+            <div class="mt-8 max-w-md mx-auto text-center">
+                <h3 class="text-lg font-semibold mb-3">
+                    Browse by Categories
+                </h3>
+
+                <select class="select select-bordered w-full"
+                        onchange="if(this.value) window.location.href=this.value;">
+                    <option disabled selected>Select a category</option>
+                    <option value="/categories/fiction">📖 Fiction</option>
+                    <option value="/categories/non-fiction">📚 Non-Fiction</option>
+                    <option value="/categories/education">🎓 Education</option>
+                    <option value="/categories/technology">💻 Technology</option>
+                    <option value="/categories/history">🏛️ History</option>
+                    <option value="/categories/biography">👤 Biography</option>
+                </select>
+            </div>
+
+        </div>
     </div>
-  </div>
+</div>
 
-  <!-- ================= BOOK GRID (STATIC DEMO) ================= -->
-  <div class="container mx-auto px-4 py-8 pb-20">
+<!-- ================= BOOK GRID ================= -->
+<div class="container mx-auto px-4 py-10">
     <h2 class="text-2xl font-bold mb-6">Popular Books</h2>
 
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
 
-      <!-- Sample Book -->
-      <div class="card bg-base-100 shadow-lg">
-        <figure>
-          <img src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600"
-               class="book-cover w-full rounded-t-xl"/>
-        </figure>
-        <div class="card-body p-4">
-          <h3 class="font-bold text-sm line-clamp-2">Atomic Habits</h3>
-          <p class="text-xs opacity-70">James Clear</p>
-          <a href="#" class="btn btn-primary btn-xs w-full mt-3">Read Now</a>
+        <div class="card bg-base-100 shadow-lg">
+            <figure>
+                <img src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600"
+                     class="w-full aspect-[3/4] object-cover"/>
+            </figure>
+            <div class="card-body p-4">
+                <h3 class="font-bold text-sm">
+                    Atomic Habits
+                </h3>
+                <p class="text-xs opacity-70">
+                    James Clear
+                </p>
+                <a href="#"
+                   class="btn btn-primary btn-xs w-full mt-3">
+                    Read Now
+                </a>
+            </div>
         </div>
-      </div>
 
     </div>
-  </div>
+</div>
 
-  <!-- ================= FOOTER ================= -->
-  <footer class="footer p-6 bg-base-200 text-center text-sm mt-auto">
-    <div>© 2025 EBook-Library • Free & Open Source</div>
-  </footer>
+<!-- ================= FOOTER ================= -->
+<footer class="footer p-6 bg-base-200 text-base-content mt-auto">
+    <div class="max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <div>
+            <h2 class="text-lg font-bold">EBook-Library</h2>
+            <p class="text-sm opacity-70">
+                Free & Open Source digital library project.<br>
+                Built for learning & sharing knowledge.
+            </p>
+        </div>
+
+        <div>
+            <h3 class="font-semibold mb-2">Quick Links</h3>
+            <ul class="menu menu-vertical">
+                <li><a href="/about">About Us</a></li>
+                <li><a href="/contact">Contact Us</a></li>
+            </ul>
+        </div>
+
+        <div>
+            <h3 class="font-semibold mb-2">Project</h3>
+            <p class="text-sm opacity-70">
+                College Project • Free Learning Resource
+            </p>
+        </div>
+
+    </div>
+</footer>
 
 </body>
 </html>

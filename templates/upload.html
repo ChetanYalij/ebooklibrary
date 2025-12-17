@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Upload New Book • E-BookLibrary</title>
+  <title>Upload Books • E-BookLibrary</title>
 
   <!-- Tailwind + DaisyUI -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -22,79 +22,80 @@
     </div>
   </div>
 
-  <!-- Upload Form -->
+  <!-- Main Content -->
   <main class="flex-grow">
-    <div class="max-w-2xl mx-auto px-4 py-10">
+    <div class="max-w-3xl mx-auto px-4 py-10">
 
-      <h2 class="text-3xl font-bold mb-6 text-center">📚 Upload a New Book</h2>
+      <h2 class="text-3xl font-bold mb-8 text-center">📚 Upload Books</h2>
 
-      <form method="POST" enctype="multipart/form-data" class="space-y-5">
+      <!-- Tabs -->
+      <div role="tablist" class="tabs tabs-boxed justify-center mb-8">
+        <a role="tab" class="tab tab-active" onclick="showTab('pdf')">PDF Upload</a>
+        <a role="tab" class="tab" onclick="showTab('json')">JSON Upload</a>
+      </div>
 
-        <div>
-          <label class="label">
-            <span class="label-text">Book Name *</span>
-          </label>
-          <input type="text" name="title" required
-                 class="input input-bordered w-full" />
-        </div>
+      <!-- ================= PDF UPLOAD ================= -->
+      <div id="pdf">
+        <form method="POST" enctype="multipart/form-data" class="space-y-5">
 
-        <div>
-          <label class="label">
-            <span class="label-text">Author *</span>
-          </label>
-          <input type="text" name="author" required
-                 class="input input-bordered w-full" />
-        </div>
-
-        <div>
-          <label class="label">
-            <span class="label-text">Description</span>
-          </label>
-          <textarea name="description" rows="4"
-                    class="textarea textarea-bordered w-full"></textarea>
-        </div>
-
-        <div>
-          <label class="label">
-            <span class="label-text">Category</span>
-          </label>
-          <input type="text" name="category"
-                 placeholder="Programming, Fiction"
-                 class="input input-bordered w-full" />
-        </div>
-
-        <div>
-          <label class="label">
-            <span class="label-text">Cover Image (Optional)</span>
-          </label>
-          <input type="file" name="cover" accept="image/*"
-                 class="file-input file-input-bordered w-full" />
-        </div>
-
-        <div>
-          <label class="label">
-            <span class="label-text">PDF File *</span>
-          </label>
-          <input type="file" name="pdf" accept=".pdf" required
-                 class="file-input file-input-bordered w-full" />
-        </div>
-
-        <div class="flex gap-3">
-          <button type="submit" class="btn btn-primary flex-1">
-            Upload Book
-          </button>
-          <a href="{{ url_for('index') }}" class="btn btn-outline flex-1">
-            Go Back
-          </a>
-        </div>
-
-      </form>
-
-      <!-- Flash Messages -->
-          <div class="mt-6 space-y-2">
-              <div class="alert alert-info">
-              </div>
+          <div>
+            <label class="label"><span class="label-text">Book Name *</span></label>
+            <input type="text" name="title" required class="input input-bordered w-full" />
           </div>
+
+          <div>
+            <label class="label"><span class="label-text">Author *</span></label>
+            <input type="text" name="author" required class="input input-bordered w-full" />
+          </div>
+
+          <div>
+            <label class="label"><span class="label-text">Description</span></label>
+            <textarea name="description" rows="4" class="textarea textarea-bordered w-full"></textarea>
+          </div>
+
+          <div>
+            <label class="label"><span class="label-text">Category</span></label>
+            <input type="text" name="category" placeholder="Programming, Fiction"
+                   class="input input-bordered w-full" />
+          </div>
+
+          <div>
+            <label class="label"><span class="label-text">Cover Image (Optional)</span></label>
+            <input type="file" name="cover" accept="image/*"
+                   class="file-input file-input-bordered w-full" />
+          </div>
+
+          <div>
+            <label class="label"><span class="label-text">PDF File *</span></label>
+            <input type="file" name="pdf" accept=".pdf" required
+                   class="file-input file-input-bordered w-full" />
+          </div>
+
+          <div class="flex gap-3">
+            <button type="submit" class="btn btn-primary flex-1">Upload Book</button>
+            <a href="{{ url_for('index') }}" class="btn btn-outline flex-1">Go Back</a>
+          </div>
+        </form>
+      </div>
+
+      <!-- ================= JSON UPLOAD ================= -->
+      <div id="json" class="hidden">
+        <div class="card bg-base-200 shadow-lg">
+          <div class="card-body">
+            <h3 class="card-title">Upload JSON File</h3>
+            <p class="text-sm opacity-70">
+              Upload a JSON file to preview multiple books data.
+            </p>
+
+            <input type="file" id="fileInput" accept=".json"
+                   class="file-input file-input-bordered w-full mt-4" />
+
+            <pre id="output"
+                 class="mt-4 p-4 bg-base-100 border rounded-lg max-h-96 overflow-auto text-sm">
+            </pre>
+          </div>
+        </div>
+      </div>
 
     </div>
   </main>
@@ -103,6 +104,49 @@
   <footer class="footer p-6 bg-base-200 text-center text-sm">
     <div>© 2025 EBook-Library • Free & Open Source</div>
   </footer>
+
+  <!-- Scripts -->
+  <script>
+    function showTab(tab) {
+      document.getElementById('pdf').classList.add('hidden');
+      document.getElementById('json').classList.add('hidden');
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('tab-active'));
+
+      if (tab === 'pdf') {
+        document.getElementById('pdf').classList.remove('hidden');
+        document.querySelectorAll('.tab')[0].classList.add('tab-active');
+      } else {
+        document.getElementById('json').classList.remove('hidden');
+        document.querySelectorAll('.tab')[1].classList.add('tab-active');
+      }
+    }
+
+    const fileInput = document.getElementById('fileInput');
+    const output = document.getElementById('output');
+
+    fileInput?.addEventListener('change', function (event) {
+      const file = event.target.files[0];
+      if (!file) {
+        output.textContent = 'No file selected.';
+        return;
+      }
+      if (!file.name.endsWith('.json')) {
+        output.textContent = 'Please select a JSON file.';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const json = JSON.parse(e.target.result);
+          output.textContent = JSON.stringify(json, null, 2);
+        } catch (err) {
+          output.textContent = 'Invalid JSON: ' + err.message;
+        }
+      };
+      reader.readAsText(file);
+    });
+  </script>
 
 </body>
 </html>
