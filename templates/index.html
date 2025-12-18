@@ -8,6 +8,16 @@
     <!-- Tailwind + DaisyUI -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
+
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
 
 <body class="bg-base-100 text-base-content min-h-screen flex flex-col">
@@ -16,15 +26,13 @@
 <div class="navbar bg-base-200 shadow-lg sticky top-0 z-50">
     <div class="flex-1">
         <a href="{{ url_for('index') }}" class="btn btn-ghost text-xl font-bold">
-            E-Library
+            E-BookLibrary
         </a>
     </div>
 
-    <!-- Three Dots Menu -->
     <div class="flex-none">
         <div class="dropdown dropdown-end">
             <label tabindex="0" class="btn btn-ghost btn-circle">
-                <!-- Three dots icon -->
                 <svg xmlns="http://www.w3.org/2000/svg"
                      class="h-6 w-6"
                      viewBox="0 0 24 24"
@@ -37,28 +45,34 @@
 
             <ul tabindex="0"
                 class="menu dropdown-content mt-3 p-4 shadow bg-base-100 rounded-box w-56 gap-2">
-
                 <li><a href="/">Home</a></li>
-                <li><a href="{{ url_for('upload') }}">Upload a new book</a></li>
-                <li><a href="/login">Login</a></li>
-                <li><a href="/register">Register</a></li>
-
+                <li>
+                    <a href="{{ url_for('upload') }}">📤 Upload Book</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('upload_json') }}">📦 Upload via JSON</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('login') }}">Login</a>
+                </li>
+                <li>
+                    <a href="/register">Register</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('admin_dashboard') }}">📊 Admin Dashboard</a>
+                </li>
                 <hr class="my-2">
-
-                <!-- Dark Mode -->
                 <li>
                     <label class="flex items-center justify-between cursor-pointer">
                         <span>Dark Mode</span>
-                        <input type="checkbox"
-                               class="toggle theme-controller"
-                               value="dark" />
+                        <span class="badge badge-primary ml-2">ADMIN</span>
+                        <input type="checkbox" class="toggle theme-controller" value="dark" />
                     </label>
                 </li>
             </ul>
         </div>
     </div>
 </div>
-<!-- ================= END NAVBAR ================= -->
 
 <!-- ================= HERO ================= -->
 <div class="hero min-h-[70vh] bg-gradient-to-b from-primary/10 to-base-100">
@@ -73,32 +87,62 @@
                 Read thousands of books anytime, anywhere — completely free.
             </p>
 
-            <!-- Search -->
-            <form class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                <input type="text"
-                       name="search"
-                       placeholder="Search books..."
-                       class="input input-bordered input-lg w-full"/>
-                <button class="btn btn-primary btn-lg">
-                    Search
-                </button>
+            <!-- ================= SEARCH ================= -->
+            <form method="GET" action="{{ url_for('search') }}" class="flex justify-center mt-8">
+                <div class="relative w-full max-w-xl">
+
+                    <input
+                        id="searchInput"
+                        type="text"
+                        name="query"
+                        placeholder="Search books, authors..."
+                        autocomplete="off"
+                        class="w-full py-4 pl-6 pr-24 rounded-full shadow-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        oninput="handleSearchInput()"
+                        required
+                    >
+
+                    <!-- Clear Button -->
+                    <button
+                        type="button"
+                        id="clearBtn"
+                        onclick="clearSearch()"
+                        class="hidden absolute right-14 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-xl transition"
+                    >
+                        ✕
+                    </button>
+
+                    <!-- Search Button -->
+                    <button
+                        type="submit"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-md transition transform hover:scale-105"
+                    >
+                        🔍
+                    </button>
+
+                    <!-- Suggestions -->
+                    <ul
+                        id="suggestions"
+                        class="hidden absolute w-full mt-2 bg-base-100 rounded-xl shadow-lg border border-base-200 overflow-hidden fade-in z-50 text-left"
+                    ></ul>
+
+                </div>
             </form>
 
-            <!-- Categories DROPDOWN -->
+            <!-- ================= CATEGORIES ================= -->
             <div class="mt-8 max-w-md mx-auto text-center">
                 <h3 class="text-lg font-semibold mb-3">
                     Browse by Categories
                 </h3>
 
                 <select class="select select-bordered w-full"
-                        onchange="if(this.value) window.location.href=this.value;">
+                        onchange="if (this.value) window.location.href = this.value;">
                     <option disabled selected>Select a category</option>
-                    <option value="/categories/fiction">📖 Fiction</option>
-                    <option value="/categories/non-fiction">📚 Non-Fiction</option>
-                    <option value="/categories/education">🎓 Education</option>
-                    <option value="/categories/technology">💻 Technology</option>
+                    <option value="/categories/Marathi">📖 Marathi</option>
+                    <option value="/categories/English Classic">📚 English Classic</option>
+                    <option value="/categories/Fiction and Non-Fiction">📘 Fiction / Non-Fiction</option>
+                    <option value="/categories/Childrens">🧒 Children</option>
                     <option value="/categories/history">🏛️ History</option>
-                    <option value="/categories/biography">👤 Biography</option>
                 </select>
             </div>
 
@@ -106,38 +150,9 @@
     </div>
 </div>
 
-<!-- ================= BOOK GRID ================= -->
-<div class="container mx-auto px-4 py-10">
-    <h2 class="text-2xl font-bold mb-6">Popular Books</h2>
-
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-
-        <div class="card bg-base-100 shadow-lg">
-            <figure>
-                <img src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600"
-                     class="w-full aspect-[3/4] object-cover"/>
-            </figure>
-            <div class="card-body p-4">
-                <h3 class="font-bold text-sm">
-                    Atomic Habits
-                </h3>
-                <p class="text-xs opacity-70">
-                    James Clear
-                </p>
-                <a href="#"
-                   class="btn btn-primary btn-xs w-full mt-3">
-                    Read Now
-                </a>
-            </div>
-        </div>
-
-    </div>
-</div>
-
 <!-- ================= FOOTER ================= -->
 <footer class="footer p-6 bg-base-200 text-base-content mt-auto">
     <div class="max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-6">
-
         <div>
             <h2 class="text-lg font-bold">EBook-Library</h2>
             <p class="text-sm opacity-70">
@@ -148,7 +163,7 @@
 
         <div>
             <h3 class="font-semibold mb-2">Quick Links</h3>
-            <ul class="menu menu-vertical">
+            <ul class="menu menu-vertical p-0">
                 <li><a href="/about">About Us</a></li>
                 <li><a href="/contact">Contact Us</a></li>
             </ul>
@@ -160,9 +175,59 @@
                 College Project • Free Learning Resource
             </p>
         </div>
-
     </div>
 </footer>
+
+<!-- ================= SCRIPT ================= -->
+<script>
+async function handleSearchInput() {
+    const input = document.getElementById("searchInput");
+    const list = document.getElementById("suggestions");
+    const clearBtn = document.getElementById("clearBtn");
+    const q = input.value.trim();
+
+    clearBtn.classList.toggle("hidden", !q);
+
+    if (q.length < 2) {
+        list.classList.add("hidden");
+        return;
+    }
+
+    const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+
+    list.innerHTML = "";
+
+    if (!data.length) {
+        list.classList.add("hidden");
+        return;
+    }
+
+    data.forEach(item => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+            <div class="px-4 py-3 hover:bg-base-200 cursor-pointer">
+                <strong>${item.title}</strong>
+                <div class="text-xs opacity-70">${item.author}</div>
+            </div>
+        `;
+        li.onclick = () => {
+            input.value = item.title;
+            list.classList.add("hidden");
+        };
+        list.appendChild(li);
+    });
+
+    list.classList.remove("hidden");
+}
+
+function clearSearch() {
+    document.getElementById("searchInput").value = "";
+    document.getElementById("suggestions").classList.add("hidden");
+    document.getElementById("clearBtn").classList.add("hidden");
+    document.getElementById("searchInput").focus();
+}
+</script>
 
 </body>
 </html>

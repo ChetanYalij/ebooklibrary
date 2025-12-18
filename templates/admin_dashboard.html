@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet"/>
+</head>
+
+<body class="bg-base-100 min-h-screen">
+
+<div class="navbar bg-base-200 shadow">
+  <div class="flex-1">
+    <a href="/" class="btn btn-ghost text-xl font-bold">E-Library Admin</a>
+  </div>
+  <div class="flex-none">
+    <span class="badge badge-primary">ADMIN</span>
+  </div>
+</div>
+
+<div class="container mx-auto px-6 py-8">
+
+  <!-- STATS -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+    <div class="stat bg-base-200 rounded-xl shadow">
+      <div class="stat-title">Total Books</div>
+      <div class="stat-value text-primary">{{ total_books }}</div>
+    </div>
+
+    <div class="stat bg-base-200 rounded-xl shadow">
+      <div class="stat-title">Total Authors</div>
+      <div class="stat-value text-secondary">{{ total_authors }}</div>
+    </div>
+
+    <div class="stat bg-base-200 rounded-xl shadow">
+      <div class="stat-title">Categories</div>
+      <div class="stat-value text-accent">{{ category_stats|length }}</div>
+    </div>
+  </div>
+
+  <!-- CATEGORY STATS -->
+  <div class="card bg-base-200 shadow mb-10">
+    <div class="card-body">
+      <h2 class="card-title">📂 Category Distribution</h2>
+      <ul class="mt-4 space-y-2">
+        <li class="flex justify-between">
+          <span>{{ cat }}</span>
+          <span class="badge badge-outline">{{ count }}</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- RECENT BOOKS -->
+  <div class="card bg-base-200 shadow">
+    <div class="card-body">
+      <h2 class="card-title">🆕 Recently Added Books</h2>
+      <ul class="mt-4 space-y-3">
+        <li class="border-b pb-2">
+          <strong>{{ book.title }}</strong>
+          <div class="text-xs opacity-70">by {{ book.author }}</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
