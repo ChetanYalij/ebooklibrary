@@ -16,10 +16,21 @@ load_dotenv()
 
 # ------------------- Flask Setup -------------------
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', 'change-this-secret-key')
+app.secret_key = os.getenv("SECRET_KEY", "change-this-secret-key")
 
 # ------------------- ADMIN CONFIG -------------------
 ADMIN_EMAIL = "chetanyalij3151@gmail.com"
+
+# ------------------- Decorators -------------------
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user_email" not in session:
+            flash("Please login first", "error")
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated_function
+
 
 def admin_required(f):
     @wraps(f)
@@ -28,7 +39,7 @@ def admin_required(f):
             flash("Login required", "error")
             return redirect(url_for("login"))
 
-        if session["user_email"] != ADMIN_EMAIL:
+        if not session.get("is_admin"):
             flash("Admin access only", "error")
             return redirect(url_for("index"))
 
@@ -100,48 +111,60 @@ def contact():
 def login():
     if request.method == "POST":
         email = request.form.get("email")
+
+        if not email:
+            flash("Email is required", "error")
+            return redirect(url_for("login"))
+
         session["user_email"] = email
+        session["is_admin"] = (email == ADMIN_EMAIL)
+
         flash(f"Logged in as {email}", "success")
         return redirect(url_for("index"))
+
     return render_template("login.html")
+
 
 @app.route("/logout")
 def logout():
-    session.pop("user_email", None)
+    session.clear()
     flash("Logged out successfully", "info")
     return redirect(url_for("index"))
 
 # =================== SEARCH ===================
 
-@app.route("/api/suggestions")
-def suggestions():
-    query = request.args.get("query", "")
-    if len(query) < 2:
+@app.route("/api/search")
+def api_search():
+    q = request.args.get("q", "").strip()
+
+    if len(q) < 2:
         return jsonify([])
 
     results = Book.query.filter(
-        (Book.title.ilike(f"%{query}%")) |
-        (Book.author.ilike(f"%{query}%"))
+        (Book.title.ilike(f"%{q}%")) |
+        (Book.author.ilike(f"%{q}%"))
     ).limit(5).all()
 
     return jsonify([
         {
             "title": b.title,
-            "author": b.author,
-            "url": url_for("search", query=b.title)
+            "author": b.author
         }
         for b in results
     ])
+
 
 @app.route("/search")
 def search():
     query = request.args.get("query", "")
     books = []
+
     if query:
         books = Book.query.filter(
             (Book.title.ilike(f"%{query}%")) |
             (Book.author.ilike(f"%{query}%"))
         ).all()
+
     return render_template(
         "search_results.html",
         books=books,
@@ -175,6 +198,8 @@ def admin_dashboard():
         recent_books=recent_books
     )
 
+# =================== UPLOAD ===================
+
 @app.route("/upload", methods=["GET", "POST"])
 @admin_required
 def upload():
@@ -184,10 +209,8 @@ def upload():
         description = request.form.get("description", "")
         category = request.form.get("category", "Uncategorized")
 
-        if Book.query.filter_by(
-            title=title, author=author
-        ).first():
-            flash("This book already exists!")
+        if Book.query.filter_by(title=title, author=author).first():
+            flash("This book already exists!", "error")
             return redirect(url_for("upload"))
 
         cover_url = None
@@ -198,7 +221,7 @@ def upload():
 
         pdf = request.files.get("pdf")
         if not pdf or not pdf.filename:
-            flash("PDF file is required!")
+            flash("PDF file is required!", "error")
             return redirect(url_for("upload"))
 
         pdf_res = cloudinary.uploader.upload(
@@ -217,18 +240,20 @@ def upload():
         db.session.add(book)
         db.session.commit()
 
-        flash("Book uploaded successfully!")
+        flash("Book uploaded successfully!", "success")
         return redirect(url_for("index"))
 
     return render_template("upload.html")
+
 
 @app.route("/upload_json", methods=["GET", "POST"])
 @admin_required
 def upload_json():
     if request.method == "POST":
         file = request.files.get("json_file")
+
         if not file or not file.filename.endswith(".json"):
-            flash("Invalid JSON file")
+            flash("Invalid JSON file", "error")
             return redirect(request.url)
 
         data = json.load(file)
@@ -237,12 +262,11 @@ def upload_json():
         for b in data:
             title = b.get("title")
             author = b.get("author")
+
             if not title or not author:
                 continue
 
-            if Book.query.filter_by(
-                title=title, author=author
-            ).first():
+            if Book.query.filter_by(title=title, author=author).first():
                 skipped += 1
                 continue
 
@@ -257,11 +281,12 @@ def upload_json():
             added += 1
 
         db.session.commit()
-        flash(f"{added} added, {skipped} skipped")
+        flash(f"{added} added, {skipped} skipped", "success")
         return redirect(url_for("index"))
 
     return render_template("upload.html")
 
 # =================== RUN ===================
+
 if __name__ == "__main__":
     app.run(debug=True)
