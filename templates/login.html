@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-base-200 flex items-center justify-center min-h-screen">
+
+  <div class="card w-full max-w-sm shadow-xl bg-base-100">
+    <div class="card-body">
+      <h2 class="text-xl font-bold text-center">Login</h2>
+
+      <form method="POST">
+        <label class="form-control w-full">
+          <span class="label-text">Email</span>
+          <input type="email"
+                 name="email"
+                 required
+                 class="input input-bordered w-full"
+                 placeholder="Enter email">
+        </label>
+
+        <button type="submit" class="btn btn-primary w-full mt-4">
+          Login
+        </button>
+      </form>
+
+      <a href="/" class="text-sm text-center mt-3 text-blue-500">
+        ← Back to Home
+      </a>
+    </div>
+  </div>
+
+</body>
+</html>
