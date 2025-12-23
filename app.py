@@ -7,6 +7,7 @@ from flask import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
+from werkzeug.security import generate_password_hash, check_password_hash
 import cloudinary
 import cloudinary.uploader
 from dotenv import load_dotenv
@@ -56,16 +57,11 @@ cloudinary.config(
 # ------------------- Database -------------------
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-if DATABASE_URL:
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace(
-            "postgres://", "postgresql://", 1
-        )
-    app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
-else:
-    app.config["SQLALCHEMY_DATABASE_URI"] = (
-        "postgresql://chetan-yalij:3151@localhost:5432/ebooklib"
-    )
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL or \
+    "postgresql://chetan-yalij:3151@localhost:5432/ebooklib"
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
@@ -75,7 +71,15 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 
 db = SQLAlchemy(app)
 
-# ------------------- Book Model -------------------
+# ------------------- MODELS -------------------
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(200))
+    name = db.Column(db.String(100))
+    is_admin = db.Column(db.Boolean, default=False)
+
+
 class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -85,41 +89,85 @@ class Book(db.Model):
     cover_url = db.Column(db.String(500))
     pdf_url = db.Column(db.String(500))
 
-# ------------------- Create Tables -------------------
+# ------------------- Create Tables + Admin -------------------
 with app.app_context():
     db.create_all()
-    print("✅ Database tables ready")
+
+    admin = User.query.filter_by(email=ADMIN_EMAIL).first()
+    if not admin:
+        admin = User(
+            email=ADMIN_EMAIL,
+            password=generate_password_hash("India@11"),
+            is_admin=True
+        )
+        db.session.add(admin)
+        db.session.commit()
 
 # =================== PUBLIC ROUTES ===================
-
 @app.route("/")
 def index():
     books = Book.query.all()
     return render_template("index.html", books=books)
 
+
 @app.route("/about")
 def about():
     return render_template("about.html")
+
 
 @app.route("/contact")
 def contact():
     return render_template("contact.html")
 
 # =================== AUTH ===================
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+        confirm = request.form.get("confirm_password")
+
+        if not email or not password or not confirm:
+            flash("All fields are required", "error")
+            return redirect(url_for("register"))
+
+        if password != confirm:
+            flash("Passwords do not match", "error")
+            return redirect(url_for("register"))
+
+        if User.query.filter_by(email=email).first():
+            flash("Email already exists", "error")
+            return redirect(url_for("register"))
+
+        user = User(
+            email=email,
+            password=generate_password_hash(password)
+        )
+        db.session.add(user)
+        db.session.commit()
+
+        flash("Registration successful! Please login.", "success")
+        return redirect(url_for("login"))
+
+    return render_template("register.html")
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         email = request.form.get("email")
+        password = request.form.get("password")
 
-        if not email:
-            flash("Email is required", "error")
+        user = User.query.filter_by(email=email).first()
+
+        if not user or not check_password_hash(user.password, password):
+            flash("Invalid email or password", "error")
             return redirect(url_for("login"))
 
-        session["user_email"] = email
-        session["is_admin"] = (email == ADMIN_EMAIL)
+        session["user_id"] = user.id
+        session["user_email"] = user.email
+        session["is_admin"] = user.is_admin
 
-        flash(f"Logged in as {email}", "success")
         return redirect(url_for("index"))
 
     return render_template("login.html")
@@ -128,11 +176,9 @@ def login():
 @app.route("/logout")
 def logout():
     session.clear()
-    flash("Logged out successfully", "info")
     return redirect(url_for("index"))
 
 # =================== SEARCH ===================
-
 @app.route("/api/search")
 def api_search():
     q = request.args.get("q", "").strip()
@@ -146,10 +192,7 @@ def api_search():
     ).limit(5).all()
 
     return jsonify([
-        {
-            "title": b.title,
-            "author": b.author
-        }
+        {"title": b.title, "author": b.author}
         for b in results
     ])
 
@@ -165,30 +208,21 @@ def search():
             (Book.author.ilike(f"%{query}%"))
         ).all()
 
-    return render_template(
-        "search_results.html",
-        books=books,
-        query=query
-    )
+    return render_template("search_results.html", books=books, query=query)
 
-# =================== ADMIN ===================
-
+# =================== ADMIN DASHBOARD ===================
 @app.route("/admin")
 @admin_required
 def admin_dashboard():
     total_books = Book.query.count()
-    total_authors = db.session.query(
-        Book.author
-    ).distinct().count()
+    total_authors = db.session.query(Book.author).distinct().count()
 
     category_stats = db.session.query(
         Book.category,
         func.count(Book.id)
     ).group_by(Book.category).all()
 
-    recent_books = Book.query.order_by(
-        Book.id.desc()
-    ).limit(5).all()
+    recent_books = Book.query.order_by(Book.id.desc()).limit(5).all()
 
     return render_template(
         "admin_dashboard.html",
@@ -199,7 +233,6 @@ def admin_dashboard():
     )
 
 # =================== UPLOAD ===================
-
 @app.route("/upload", methods=["GET", "POST"])
 @admin_required
 def upload():
@@ -224,9 +257,7 @@ def upload():
             flash("PDF file is required!", "error")
             return redirect(url_for("upload"))
 
-        pdf_res = cloudinary.uploader.upload(
-            pdf, resource_type="raw"
-        )
+        pdf_res = cloudinary.uploader.upload(pdf, resource_type="raw")
 
         book = Book(
             title=title,
@@ -240,12 +271,11 @@ def upload():
         db.session.add(book)
         db.session.commit()
 
-        flash("Book uploaded successfully!", "success")
-        return redirect(url_for("index"))
+        return redirect(url_for("admin_dashboard"))
 
     return render_template("upload.html")
 
-
+# =================== JSON UPLOAD ===================
 @app.route("/upload_json", methods=["GET", "POST"])
 @admin_required
 def upload_json():
@@ -257,36 +287,30 @@ def upload_json():
             return redirect(request.url)
 
         data = json.load(file)
-        added = skipped = 0
 
         for b in data:
-            title = b.get("title")
-            author = b.get("author")
-
-            if not title or not author:
+            if not b.get("title") or not b.get("author"):
                 continue
 
-            if Book.query.filter_by(title=title, author=author).first():
-                skipped += 1
+            if Book.query.filter_by(
+                title=b["title"], author=b["author"]
+            ).first():
                 continue
 
             db.session.add(Book(
-                title=title,
-                author=author,
+                title=b["title"],
+                author=b["author"],
                 description=b.get("description", ""),
                 category=b.get("category", "Uncategorized"),
                 cover_url=b.get("cover_url"),
                 pdf_url=b.get("pdf_url")
             ))
-            added += 1
 
         db.session.commit()
-        flash(f"{added} added, {skipped} skipped", "success")
-        return redirect(url_for("index"))
+        return redirect(url_for("admin_dashboard"))
 
     return render_template("upload.html")
 
 # =================== RUN ===================
-
 if __name__ == "__main__":
     app.run(debug=True)

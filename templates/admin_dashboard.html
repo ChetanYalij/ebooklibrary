@@ -56,10 +56,14 @@
     <div class="card-body">
       <h2 class="card-title">🆕 Recently Added Books</h2>
       <ul class="mt-4 space-y-3">
+        {% for book in recent_books %}
         <li class="border-b pb-2">
           <strong>{{ book.title }}</strong>
           <div class="text-xs opacity-70">by {{ book.author }}</div>
         </li>
+        {% else %}
+        <li class="text-sm opacity-60">No books found</li>
+        {% endfor %}
       </ul>
     </div>
   </div>

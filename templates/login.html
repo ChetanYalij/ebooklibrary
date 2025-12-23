@@ -2,35 +2,78 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Login</title>
+  <title>Login • EBook Library</title>
+
+  <!-- Tailwind + DaisyUI -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet">
+  <link
+    href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+    rel="stylesheet"
+  />
 </head>
 
 <body class="bg-base-200 flex items-center justify-center min-h-screen">
 
-  <div class="card w-full max-w-sm shadow-xl bg-base-100">
+  <div class="card w-full max-w-sm shadow-2xl bg-base-100">
     <div class="card-body">
-      <h2 class="text-xl font-bold text-center">Login</h2>
 
+      <!-- User Icon -->
+      <div class="flex justify-center mb-4">
+        <div class="avatar placeholder">
+          <div class="bg-primary text-primary-content rounded-full w-20 h-20 text-3xl font-bold flex items-center justify-center">
+            C
+          </div>
+        </div>
+      </div>
+
+      <h2 class="text-xl font-bold text-center">
+        Sign in
+      </h2>
+      <p class="text-center text-sm text-gray-500 mb-4">
+        Use your email to continue
+      </p>
+
+      <!-- Login Form -->
       <form method="POST">
-        <label class="form-control w-full">
+
+        <label class="form-control w-full mb-3">
           <span class="label-text">Email</span>
-          <input type="email"
-                 name="email"
-                 required
-                 class="input input-bordered w-full"
-                 placeholder="Enter email">
+          <input
+            type="email"
+            name="email"
+            required
+            placeholder="example@gmail.com"
+            class="input input-bordered w-full"
+          />
         </label>
 
-        <button type="submit" class="btn btn-primary w-full mt-4">
+        <label class="form-control w-full mb-4">
+          <span class="label-text">Password</span>
+          <input
+            type="password"
+            name="password"
+            required
+            placeholder="••••••••"
+            class="input input-bordered w-full"
+          />
+        </label>
+
+        <button type="submit" class="btn btn-primary w-full">
           Login
         </button>
       </form>
 
-      <a href="/" class="text-sm text-center mt-3 text-blue-500">
-        ← Back to Home
-      </a>
+      <!-- Links -->
+      <div class="text-center mt-4 text-sm">
+        <a href="{{ url_for('register') }}" class="text-blue-500 hover:underline">
+          Create account
+        </a>
+        <span class="mx-1">•</span>
+        <a href="{{ url_for('index') }}" class="text-gray-500 hover:underline">
+          Back to home
+        </a>
+      </div>
+
     </div>
   </div>
 

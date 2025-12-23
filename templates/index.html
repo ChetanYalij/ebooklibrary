@@ -28,36 +28,56 @@
         </a>
     </div>
 
-    <div class="flex-none">
+    <!-- RIGHT SIDE -->
+    <div class="flex-none gap-2">
+
+        <!-- USER ICON WHEN LOGGED IN -->
         <div class="dropdown dropdown-end">
-            <label tabindex="0" class="btn btn-ghost btn-circle">
-                <svg xmlns="http://www.w3.org/2000/svg"
-                     class="h-6 w-6"
-                     viewBox="0 0 24 24"
-                     fill="currentColor">
-                    <circle cx="12" cy="5" r="2"/>
-                    <circle cx="12" cy="12" r="2"/>
-                    <circle cx="12" cy="19" r="2"/>
-                </svg>
+            <label tabindex="0" class="btn btn-ghost btn-circle avatar">
+                <div class="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg">
+                    <span class="avatar">
+                        {% if session.get("user_email") %}
+                            {{ session.get("user_email")[0]|upper }}
+                        {% else %}
+                            G
+                        {% endif %}
+                    </span>
+                </div>
             </label>
 
             <ul tabindex="0"
-                class="menu dropdown-content mt-3 p-4 shadow bg-base-100 rounded-box w-56 gap-2">
+                class="menu menu-sm dropdown-content mt-3 p-3 shadow bg-base-100 rounded-box w-56">
 
-                <li><a href="{{ url_for('index') }}">Home</a></li>
-                <li><a href="{{ url_for('upload') }}">📤 Upload Book</a></li>
-                <li><a href="{{ url_for('admin_dashboard') }}">📊 Admin Dashboard</a></li>
-                <li><a href="{{ url_for('login') }}">Login</a></li>
-              
-                <hr class="my-2">
+                <li class="disabled">
+                    <span class="text-xs opacity-70">Logged in as</span>
+                    <span class="font-semibold text-sm break-all">
+                        "user_email"
+                    </span>
+                </li>
+
+                <div class="divider my-1"></div>
+
                 <li>
-                    <label class="flex items-center justify-between cursor-pointer">
-                        <span>Dark Mode</span>
-                        <input type="checkbox" class="toggle theme-controller" value="dark" />
-                    </label>
+                    <a href="{{ url_for('admin_dashboard') }}">📊 Admin Dashboard</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('upload') }}">📤 Upload Book</a>
+                </li>
+                <div class="divider my-1"></div>
+
+                <li>
+                    <a href="{{ url_for('logout') }}" class="text-red-500">
+                        🚪 Logout
+                    </a>
                 </li>
             </ul>
         </div>
+
+        <!-- LOGIN BUTTON FOR GUEST -->
+        <a href="{{ url_for('login') }}" class="btn btn-primary btn-sm">
+            Login
+        </a>
+
     </div>
 </div>
 
@@ -89,49 +109,27 @@
                         required
                     >
 
-                    <!-- Clear Button -->
                     <button
                         type="button"
                         id="clearBtn"
                         onclick="clearSearch()"
-                        class="hidden absolute right-14 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-xl transition"
-                    >
+                        class="hidden absolute right-14 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-xl transition">
                         ✕
                     </button>
 
-                    <!-- Search Button -->
                     <button
                         type="submit"
-                        class="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-md transition transform hover:scale-105"
-                    >
+                        class="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-md transition transform hover:scale-105">
                         🔍
                     </button>
 
-                    <!-- Suggestions -->
                     <ul
                         id="suggestions"
-                        class="hidden absolute w-full mt-2 bg-base-100 rounded-xl shadow-lg border border-base-200 overflow-hidden fade-in z-50 text-left"
-                    ></ul>
+                        class="hidden absolute w-full mt-2 bg-base-100 rounded-xl shadow-lg border border-base-200 overflow-hidden fade-in z-50 text-left">
+                    </ul>
 
                 </div>
             </form>
-
-            <!-- ================= CATEGORIES ================= -->
-            <div class="mt-8 max-w-md mx-auto text-center">
-                <h3 class="text-lg font-semibold mb-3">
-                    Browse by Categories
-                </h3>
-
-                <select class="select select-bordered w-full"
-                        onchange="if (this.value) window.location.href = this.value;">
-                    <option disabled selected>Select a category</option>
-                    <option value="/categories/Marathi">📖 Marathi</option>
-                    <option value="/categories/English Classic">📚 English Classic</option>
-                    <option value="/categories/Fiction and Non-Fiction">📘 Fiction / Non-Fiction</option>
-                    <option value="/categories/Childrens">🧒 Children</option>
-                    <option value="/categories/history">🏛️ History</option>
-                </select>
-            </div>
 
         </div>
     </div>
@@ -165,7 +163,6 @@
     </div>
 </footer>
 
-<!-- ================= SCRIPT ================= -->
 <script>
 async function handleSearchInput() {
     const input = document.getElementById("searchInput");
@@ -196,8 +193,7 @@ async function handleSearchInput() {
             <div class="px-4 py-3 hover:bg-base-200 cursor-pointer">
                 <strong>${item.title}</strong>
                 <div class="text-xs opacity-70">${item.author}</div>
-            </div>
-        `;
+            </div>`;
         li.onclick = () => {
             input.value = item.title;
             list.classList.add("hidden");

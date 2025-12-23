@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register • E-BookLibrary</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Tailwind + DaisyUI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
+</head>
+
+<body class="bg-base-200 min-h-screen flex items-center justify-center">
+
+<div class="w-full max-w-md bg-base-100 p-8 rounded-xl shadow-lg">
+
+    <h2 class="text-3xl font-bold text-center mb-6">
+        Create Account
+    </h2>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ 'error' if category == 'error' else 'success' }} mb-4">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('register') }}" class="space-y-4">
+
+        <div>
+            <label class="label">
+                <span class="label-text">Email</span>
+            </label>
+            <input
+                type="email"
+                name="email"
+                placeholder="Enter your email"
+                class="input input-bordered w-full"
+                required>
+        </div>
+
+        <div>
+            <label class="label">
+                <span class="label-text">Password</span>
+            </label>
+            <input
+                type="password"
+                name="password"
+                placeholder="Create password"
+                class="input input-bordered w-full"
+                required>
+        </div>
+
+        <div>
+            <label class="label">
+                <span class="label-text">Confirm Password</span>
+            </label>
+            <input
+                type="password"
+                name="confirm_password"
+                placeholder="Confirm password"
+                class="input input-bordered w-full"
+                required>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-full">
+            Register
+        </button>
+    </form>
+
+    <p class="text-center text-sm mt-4">
+        Already have an account?
+        <a href="{{ url_for('login') }}" class="text-blue-500 font-semibold">
+            Login here
+        </a>
+    </p>
+
+</div>
+
+</body>
+</html>
