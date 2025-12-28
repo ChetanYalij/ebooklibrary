@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ book.title }} • E-BookLibrary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-base-100 text-base-content">
+
+<div class="max-w-5xl mx-auto p-6">
+
+    <a href="{{ url_for('index') }}" class="text-blue-500 hover:underline">
+        ← Back to Library
+    </a>
+
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+
+        <!-- COVER -->
+        <div>
+                <img src="{{ book.cover_url }}"
+                     class="rounded-lg shadow-md w-full">
+                <div class="w-full h-64 bg-base-200 flex items-center justify-center rounded">
+                    No Cover
+                </div>
+        </div>
+
+        <!-- DETAILS -->
+        <div class="md:col-span-2">
+            <h1 class="text-3xl font-bold mb-2">{{ book.title }}</h1>
+            <p class="text-lg opacity-80 mb-4">by {{ book.author }}</p>
+
+            <p class="mb-6 leading-relaxed">
+                {{ book.description or "No description available." }}
+            </p>
+
+            <div class="flex gap-4">
+                <a href="{{ book.pdf_url }}"
+                   target="_blank"
+                   class="btn btn-primary">
+                    📖 Read PDF
+                </a>
+
+                <a href="{{ book.pdf_url }}"
+                   download
+                   class="btn btn-outline">
+                    ⬇ Download
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>

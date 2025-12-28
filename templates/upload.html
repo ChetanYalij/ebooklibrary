@@ -1,152 +1,77 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Upload Books • E-BookLibrary</title>
-
-  <!-- Tailwind + DaisyUI -->
+  <meta charset="UTF-8">
+  <title>Upload Book</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
 </head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
 
-<body class="bg-base-100 text-base-content min-h-screen flex flex-col">
+<div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-lg">
+  <h2 class="text-2xl font-bold text-center mb-6">📚 Upload Book</h2>
 
-  <!-- Navbar -->
-  <div class="navbar bg-base-200 shadow-lg sticky top-0 z-50">
-    <div class="flex-1">
-      <a href="/" class="btn btn-ghost text-xl font-bold">E-Library</a>
-    </div>
-    <div class="flex-none gap-2">
-      <a href="/" class="btn btn-outline btn-sm">Home</a>
-    </div>
-  </div>
-
-  <!-- Main Content -->
-  <main class="flex-grow">
-    <div class="max-w-3xl mx-auto px-4 py-10">
-
-      <h2 class="text-3xl font-bold mb-8 text-center">📚 Upload Books</h2>
-
-      <!-- Tabs -->
-      <div role="tablist" class="tabs tabs-boxed justify-center mb-8">
-        <a role="tab" class="tab tab-active" onclick="showTab('pdf')">PDF Upload</a>
-        <a role="tab" class="tab" onclick="showTab('json')">JSON Upload</a>
-      </div>
-
-      <!-- ================= PDF UPLOAD ================= -->
-      <div id="pdf">
-        <form method="POST" enctype="multipart/form-data" class="space-y-5">
-
-          <div>
-            <label class="label"><span class="label-text">Book Name *</span></label>
-            <input type="text" name="title" required class="input input-bordered w-full" />
-          </div>
-
-          <div>
-            <label class="label"><span class="label-text">Author *</span></label>
-            <input type="text" name="author" required class="input input-bordered w-full" />
-          </div>
-
-          <div>
-            <label class="label"><span class="label-text">Description</span></label>
-            <textarea name="description" rows="4" class="textarea textarea-bordered w-full"></textarea>
-          </div>
-
-          <div>
-            <label class="label"><span class="label-text">Category</span></label>
-            <input type="text" name="category" placeholder="Programming, Fiction"
-                   class="input input-bordered w-full" />
-          </div>
-
-          <div>
-            <label class="label"><span class="label-text">Cover Image (Optional)</span></label>
-            <input type="file" name="cover" accept="image/*"
-                   class="file-input file-input-bordered w-full" />
-          </div>
-
-          <div>
-            <label class="label"><span class="label-text">PDF File *</span></label>
-            <input type="file" name="pdf" accept=".pdf" required
-                   class="file-input file-input-bordered w-full" />
-          </div>
-
-          <div class="flex gap-3">
-            <button type="submit" class="btn btn-primary flex-1">Upload Book</button>
-            <a href="{{ url_for('index') }}" class="btn btn-outline flex-1">Go Back</a>
-          </div>
-        </form>
-      </div>
-
-      <!-- ================= JSON UPLOAD ================= -->
-      <div id="json" class="hidden">
-        <div class="card bg-base-200 shadow-lg">
-          <div class="card-body">
-            <h3 class="card-title">Upload JSON File</h3>
-            <p class="text-sm opacity-70">
-              Upload a JSON file to preview multiple books data.
-            </p>
-
-            <input type="file" id="fileInput" accept=".json"
-                   class="file-input file-input-bordered w-full mt-4" />
-
-            <pre id="output"
-                 class="mt-4 p-4 bg-base-100 border rounded-lg max-h-96 overflow-auto text-sm">
-            </pre>
-          </div>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="mb-4 text-sm {{ 'text-red-600' if category=='error' else 'text-green-600' }}">
+          {{ message }}
         </div>
-      </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
 
+  <!-- Normal Book Upload Form -->
+  <form method="POST" enctype="multipart/form-data" class="mb-6">
+    <div class="mb-4">
+      <label class="block mb-1 font-medium">Title</label>
+      <input type="text" name="title" required class="w-full border rounded px-3 py-2">
     </div>
-  </main>
 
-  <!-- Footer -->
-  <footer class="footer p-6 bg-base-200 text-center text-sm">
-    <div>© 2025 EBook-Library • Free & Open Source</div>
-  </footer>
+    <div class="mb-4">
+      <label class="block mb-1 font-medium">Author</label>
+      <input type="text" name="author" required class="w-full border rounded px-3 py-2">
+    </div>
 
-  <!-- Scripts -->
-  <script>
-    function showTab(tab) {
-      document.getElementById('pdf').classList.add('hidden');
-      document.getElementById('json').classList.add('hidden');
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('tab-active'));
+    <div class="mb-4">
+      <label class="block mb-1 font-medium">Description</label>
+      <textarea name="description" class="w-full border rounded px-3 py-2"></textarea>
+    </div>
 
-      if (tab === 'pdf') {
-        document.getElementById('pdf').classList.remove('hidden');
-        document.querySelectorAll('.tab')[0].classList.add('tab-active');
-      } else {
-        document.getElementById('json').classList.remove('hidden');
-        document.querySelectorAll('.tab')[1].classList.add('tab-active');
-      }
-    }
+    <div class="mb-4">
+      <label class="block mb-1 font-medium">Category</label>
+      <input type="text" name="category" class="w-full border rounded px-3 py-2" placeholder="Uncategorized">
+    </div>
 
-    const fileInput = document.getElementById('fileInput');
-    const output = document.getElementById('output');
+    <div class="mb-4">
+      <label class="block mb-1 font-medium">Cover Image</label>
+      <input type="file" name="cover" accept="image/*" class="w-full border rounded px-3 py-2">
+    </div>
 
-    fileInput?.addEventListener('change', function (event) {
-      const file = event.target.files[0];
-      if (!file) {
-        output.textContent = 'No file selected.';
-        return;
-      }
-      if (!file.name.endsWith('.json')) {
-        output.textContent = 'Please select a JSON file.';
-        return;
-      }
+    <div class="mb-4">
+      <label class="block mb-1 font-medium">PDF File</label>
+      <input type="file" name="pdf" accept="application/pdf" required class="w-full border rounded px-3 py-2">
+    </div>
 
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        try {
-          const json = JSON.parse(e.target.result);
-          output.textContent = JSON.stringify(json, null, 2);
-        } catch (err) {
-          output.textContent = 'Invalid JSON: ' + err.message;
-        }
-      };
-      reader.readAsText(file);
-    });
-  </script>
+    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+      Upload Book
+    </button>
+  </form>
+
+  <hr class="my-6">
+
+  <!-- JSON Upload Form -->
+  <h3 class="text-xl font-bold mb-4">📄 Upload JSON File</h3>
+  <form method="POST" action="{{ url_for('upload_json') }}" enctype="multipart/form-data">
+    <div class="mb-4">
+      <label class="block mb-1 font-medium">JSON File</label>
+      <input type="file" name="json_file" accept=".json" required class="w-full border rounded px-3 py-2">
+    </div>
+
+    <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">
+      Upload JSON
+    </button>
+  </form>
+</div>
 
 </body>
 </html>
