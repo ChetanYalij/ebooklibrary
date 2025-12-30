@@ -1,85 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Register • E-BookLibrary</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- Tailwind + DaisyUI -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <title>Register | E-Book Library</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-base-200 min-h-screen flex items-center justify-center">
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
 
-<div class="w-full max-w-md bg-base-100 p-8 rounded-xl shadow-lg">
+  <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
 
-    <h2 class="text-3xl font-bold text-center mb-6">
-        Create Account
+    <h2 class="text-2xl font-bold text-center mb-6">
+      📘 Create Account
     </h2>
 
-    <!-- Flash messages -->
+    <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
-          <div class="alert alert-{{ 'error' if category == 'error' else 'success' }} mb-4">
+          <div class="mb-4 text-sm text-center
+            {% if category == 'error' %}
+              text-red-600
+            {% else %}
+              text-green-600
+            {% endif %}">
             {{ message }}
           </div>
         {% endfor %}
       {% endif %}
     {% endwith %}
 
-    <form method="POST" action="{{ url_for('register') }}" class="space-y-4">
+    <form method="POST">
 
-        <div>
-            <label class="label">
-                <span class="label-text">Email</span>
-            </label>
-            <input
-                type="email"
-                name="email"
-                placeholder="Enter your email"
-                class="input input-bordered w-full"
-                required>
-        </div>
+      <!-- Name -->
+      <div class="mb-4">
+        <label class="block mb-1 font-medium">Full Name</label>
+        <input type="text" name="name" required
+               class="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+               placeholder="Your full name">
+      </div>
 
-        <div>
-            <label class="label">
-                <span class="label-text">Password</span>
-            </label>
-            <input
-                type="password"
-                name="password"
-                placeholder="Create password"
-                class="input input-bordered w-full"
-                required>
-        </div>
+      <!-- Email -->
+      <div class="mb-4">
+        <label class="block mb-1 font-medium">Email</label>
+        <input type="email" name="email" required
+               class="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+               placeholder="example@email.com">
+      </div>
 
-        <div>
-            <label class="label">
-                <span class="label-text">Confirm Password</span>
-            </label>
-            <input
-                type="password"
-                name="confirm_password"
-                placeholder="Confirm password"
-                class="input input-bordered w-full"
-                required>
-        </div>
+      <!-- Password -->
+      <div class="mb-4">
+        <label class="block mb-1 font-medium">Password</label>
+        <input type="password" name="password" required
+               class="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+               placeholder="••••••••">
+      </div>
 
-        <button type="submit" class="btn btn-primary w-full">
-            Register
-        </button>
+      <!-- Confirm Password -->
+      <div class="mb-6">
+        <label class="block mb-1 font-medium">Confirm Password</label>
+        <input type="password" name="confirm_password" required
+               class="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+               placeholder="••••••••">
+      </div>
+
+      <!-- Submit -->
+      <button type="submit"
+              class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">
+        Register
+      </button>
+
     </form>
 
+    <!-- Login Link -->
     <p class="text-center text-sm mt-4">
-        Already have an account?
-        <a href="{{ url_for('login') }}" class="text-blue-500 font-semibold">
-            Login here
-        </a>
+      Already have an account?
+      <a href="{{ url_for('login') }}" class="text-blue-600 hover:underline">
+        Login
+      </a>
     </p>
 
-</div>
+  </div>
 
 </body>
 </html>

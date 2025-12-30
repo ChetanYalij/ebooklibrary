@@ -122,16 +122,19 @@ def book_detail(book_id):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
-        user = User.query.filter_by(email=email, is_admin=False).first()
-        if not user or not check_password_hash(user.password, password):
-            flash("Invalid credentials", "error")
-            return redirect(url_for("login"))
-        session["user_id"] = user.id
-        session["user_email"] = user.email
-        session["is_admin"] = False
-        return redirect(url_for("index"))
+        email = request.form["email"]
+        password = request.form["password"]
+
+        user = User.query.filter_by(email=email).first()
+
+        if user and check_password_hash(user.password, password):
+            session["user_id"] = user.id
+            session["user_name"] = user.name
+            flash("Login successful", "success")
+            return redirect(url_for("index"))  # ✅ ONLY CHANGE HERE
+
+        flash("Invalid email or password", "error")
+
     return render_template("login.html")
 
 # =================== ADMIN LOGIN ===================
@@ -182,23 +185,28 @@ def search():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
-        confirm = request.form.get("confirm_password")
-        if not email or not password or not confirm:
-            flash("All fields are required", "error")
-            return redirect(url_for("register"))
-        if password != confirm:
-            flash("Passwords do not match", "error")
-            return redirect(url_for("register"))
+        name = request.form["name"]
+        email = request.form["email"]
+        password = request.form["password"]
+
         if User.query.filter_by(email=email).first():
-            flash("Email already exists", "error")
+            flash("User already exists", "error")
             return redirect(url_for("register"))
-        user = User(email=email, password=generate_password_hash(password), is_admin=False)
+
+        hashed_password = generate_password_hash(password)
+
+        user = User(
+            name=name,
+            email=email,
+            password=hashed_password
+        )
+
         db.session.add(user)
         db.session.commit()
+
         flash("Registration successful. Please login.", "success")
         return redirect(url_for("login"))
+
     return render_template("register.html")
 
 # =================== ADMIN DASHBOARD ===================
