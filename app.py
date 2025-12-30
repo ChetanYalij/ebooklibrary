@@ -27,7 +27,7 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if "user_email" not in session:
+        if "user_id" not in session:
             flash("Please login first", "error")
             return redirect(url_for("login"))
         return f(*args, **kwargs)
@@ -36,10 +36,11 @@ def login_required(f):
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if "user_email" not in session:
+        if "user_id" not in session:
             flash("Login required", "error")
             return redirect(url_for("login"))
-        if not session.get("is_admin"):
+        user = User.query.get(session["user_id"])
+        if not user or not user.is_admin:
             flash("Admin access only", "error")
             return redirect(url_for("index"))
         return f(*args, **kwargs)
@@ -57,15 +58,12 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL or \
-    "postgresql://chetan-yalij:3151@localhost:5432/ebooklib"
-
+app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL or "postgresql://chetan-yalij:3151@localhost:5432/ebooklib"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
     "pool_recycle": 300
 }
-
 db = SQLAlchemy(app)
 
 # ------------------- MODELS -------------------
@@ -94,6 +92,7 @@ with app.app_context():
             admin = User(
                 email=ADMIN_EMAIL,
                 password=generate_password_hash(ADMIN_PASSWORD),
+                name="Admin",
                 is_admin=True
             )
             db.session.add(admin)
@@ -118,47 +117,17 @@ def book_detail(book_id):
     book = Book.query.get_or_404(book_id)
     return render_template("book_detail.html", book=book)
 
-# =================== AUTH (NORMAL USERS) ===================
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        email = request.form["email"]
-        password = request.form["password"]
+@app.route("/search")
+def search():
+    query = request.args.get("query", "").strip()
+    books = []
+    if query:
+        books = Book.query.filter(
+            (Book.title.ilike(f"%{query}%")) |
+            (Book.author.ilike(f"%{query}%"))
+        ).all()
+    return render_template("search_results.html", books=books, query=query)
 
-        user = User.query.filter_by(email=email).first()
-
-        if user and check_password_hash(user.password, password):
-            session["user_id"] = user.id
-            session["user_name"] = user.name
-            flash("Login successful", "success")
-            return redirect(url_for("index"))  # ✅ ONLY CHANGE HERE
-
-        flash("Invalid email or password", "error")
-
-    return render_template("login.html")
-
-# =================== ADMIN LOGIN ===================
-@app.route("/ebooklibrary-admin-9382-login", methods=["GET", "POST"])
-def secret_admin_login():
-    if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
-        user = User.query.filter_by(email=email, is_admin=True).first()
-        if not user or not check_password_hash(user.password, password):
-            flash("Invalid admin credentials", "error")
-            return redirect(request.url)
-        session["user_id"] = user.id
-        session["user_email"] = user.email
-        session["is_admin"] = True
-        return redirect(url_for("admin_dashboard"))
-    return render_template("admin_login.html")
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("index"))
-
-# =================== SEARCH ===================
 @app.route("/api/search")
 def api_search():
     q = request.args.get("q", "").strip()
@@ -170,53 +139,62 @@ def api_search():
     ).limit(6).all()
     return jsonify([{"id": b.id, "title": b.title, "author": b.author} for b in results])
 
-@app.route("/search")
-def search():
-    query = request.args.get("query", "")
-    books = []
-    if query:
-        books = Book.query.filter(
-            (Book.title.ilike(f"%{query}%")) |
-            (Book.author.ilike(f"%{query}%"))
-        ).all()
-    return render_template("search_results.html", books=books, query=query)
-
-# =================== REGISTER ===================
+# =================== AUTH ROUTES ===================
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
         name = request.form["name"]
         email = request.form["email"]
         password = request.form["password"]
-
         if User.query.filter_by(email=email).first():
-            flash("User already exists", "error")
+            flash("Email already registered", "error")
             return redirect(url_for("register"))
-
-        hashed_password = generate_password_hash(password)
-
         user = User(
             name=name,
             email=email,
-            password=hashed_password
+            password=generate_password_hash(password),
+            is_admin=False
         )
-
         db.session.add(user)
         db.session.commit()
-
-        flash("Registration successful. Please login.", "success")
+        flash("Registration successful! Please login.", "success")
         return redirect(url_for("login"))
-
     return render_template("register.html")
 
-# =================== ADMIN DASHBOARD ===================
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form["email"]
+        password = request.form["password"]
+        user = User.query.filter_by(email=email).first()
+        if user and check_password_hash(user.password, password):
+            session["user_id"] = user.id
+            session["user_name"] = user.name
+            session["user_email"] = user.email
+            session["is_admin"] = user.is_admin
+            
+            flash("Login successful!", "success")
+            if user.is_admin:
+                return redirect(url_for("admin_dashboard"))
+            return redirect(url_for("index"))
+        flash("Invalid email or password", "error")
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("Logged out successfully", "success")
+    return redirect(url_for("index"))
+
+# =================== ADMIN ROUTES ===================
 @app.route("/admin")
 @admin_required
 def admin_dashboard():
     total_books = Book.query.count()
     total_authors = db.session.query(Book.author).distinct().count()
     category_stats = db.session.query(Book.category, func.count(Book.id)).group_by(Book.category).all()
-    recent_books = Book.query.order_by(Book.id.desc()).limit(5).all()
+    recent_books = Book.query.order_by(Book.id.desc()).limit(10).all()
+    
     return render_template(
         "admin_dashboard.html",
         total_books=total_books,
@@ -225,42 +203,54 @@ def admin_dashboard():
         recent_books=recent_books
     )
 
-# =================== UPLOAD BOOK ===================
-@app.route("/upload", methods=["GET", "POST"])
+@app.route("/admin/upload", methods=["GET", "POST"])
 @admin_required
-def upload():
+def upload_book():
     if request.method == "POST":
-        title = request.form["title"]
-        author = request.form["author"]
+        title = request.form.get("title")
+        author = request.form.get("author")
         description = request.form.get("description", "")
         category = request.form.get("category", "Uncategorized")
 
         if Book.query.filter_by(title=title, author=author).first():
             flash("This book already exists!", "error")
-            return redirect(url_for("upload"))
+            return redirect(url_for("upload_book"))
 
         cover_url = None
+        pdf_url = None
+
+        # Cover upload
         cover = request.files.get("cover")
         if cover and cover.filename:
-            res = cloudinary.uploader.upload(cover)
-            cover_url = res["secure_url"]
+            try:
+                res = cloudinary.uploader.upload(cover)
+                cover_url = res["secure_url"]
+            except Exception as e:
+                flash(f"Cover upload failed: {str(e)}", "error")
+                return redirect(url_for("upload_book"))
 
+        # PDF upload (required)
         pdf = request.files.get("pdf")
         if not pdf or not pdf.filename:
             flash("PDF file is required!", "error")
-            return redirect(url_for("upload"))
+            return redirect(url_for("upload_book"))
+        
+        try:
+            pdf_res = cloudinary.uploader.upload(pdf, resource_type="raw")
+            pdf_url = pdf_res["secure_url"]
+        except Exception as e:
+            flash(f"PDF upload failed: {str(e)}", "error")
+            return redirect(url_for("upload_book"))
 
-        pdf_res = cloudinary.uploader.upload(pdf, resource_type="raw")
-
+        # Save book
         book = Book(
             title=title,
             author=author,
             description=description,
             category=category,
             cover_url=cover_url,
-            pdf_url=pdf_res["secure_url"]
+            pdf_url=pdf_url
         )
-
         db.session.add(book)
         db.session.commit()
         flash("Book uploaded successfully!", "success")
@@ -268,34 +258,73 @@ def upload():
 
     return render_template("upload.html")
 
-# =================== UPLOAD JSON ===================
-@app.route("/upload_json", methods=["POST"])
+@app.route("/admin/upload_json", methods=["POST"])
 @admin_required
 def upload_json():
     file = request.files.get("json_file")
     if not file or not file.filename.endswith(".json"):
-        flash("Invalid JSON file", "error")
-        return redirect(url_for("upload"))
+        flash("Please upload a valid JSON file", "error")
+        return redirect(url_for("upload_book"))
 
-    data = json.load(file)
-    for b in data:
-        if not b.get("title") or not b.get("author"):
-            continue
-        if Book.query.filter_by(title=b["title"], author=b["author"]).first():
-            continue
-        db.session.add(Book(
-            title=b["title"],
-            author=b["author"],
-            description=b.get("description", ""),
-            category=b.get("category", "Uncategorized"),
-            cover_url=b.get("cover_url"),
-            pdf_url=b.get("pdf_url")
-        ))
-
-    db.session.commit()
-    flash("JSON uploaded successfully!", "success")
+    try:
+        data = json.load(file)
+        added = 0
+        for b in data:
+            if not b.get("title") or not b.get("author"):
+                continue
+            if Book.query.filter_by(title=b["title"], author=b["author"]).first():
+                continue
+            db.session.add(Book(
+                title=b["title"],
+                author=b["author"],
+                description=b.get("description", ""),
+                category=b.get("category", "Uncategorized"),
+                cover_url=b.get("cover_url"),
+                pdf_url=b.get("pdf_url")
+            ))
+            added += 1
+        db.session.commit()
+        flash(f"{added} books uploaded from JSON successfully!", "success")
+    except Exception as e:
+        flash(f"JSON upload failed: {str(e)}", "error")
+    
     return redirect(url_for("admin_dashboard"))
 
-# =================== RUN ===================
+@app.route("/admin/edit/<int:book_id>", methods=["GET", "POST"])
+@admin_required
+def edit_book(book_id):
+    book = Book.query.get_or_404(book_id)
+    
+    if request.method == "POST":
+        book.title = request.form["title"]
+        book.author = request.form["author"]
+        book.description = request.form.get("description", "")
+        book.category = request.form.get("category", "Uncategorized")
+        
+        # Optional: update cover if new one uploaded
+        cover = request.files.get("cover")
+        if cover and cover.filename:
+            try:
+                res = cloudinary.uploader.upload(cover)
+                book.cover_url = res["secure_url"]
+            except Exception as e:
+                flash(f"Cover update failed: {str(e)}", "warning")
+        
+        db.session.commit()
+        flash("Book updated successfully!", "success")
+        return redirect(url_for("admin_dashboard"))
+    
+    return render_template("edit_book.html", book=book)
+
+@app.route("/admin/delete/<int:book_id>", methods=["POST"])
+@admin_required
+def delete_book(book_id):
+    book = Book.query.get_or_404(book_id)
+    db.session.delete(book)
+    db.session.commit()
+    flash("Book deleted successfully!", "success")
+    return redirect(url_for("admin_dashboard"))
+
+# =================== RUN APP ===================
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()

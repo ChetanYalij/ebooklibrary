@@ -1,217 +1,227 @@
-<!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>E-BookLibrary • Free Books</title>
+import os
+import json
+from functools import wraps
+from flask import (
+    Flask, render_template, request, session,
+    flash, redirect, url_for, jsonify
+)
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
+from werkzeug.security import generate_password_hash, check_password_hash
+import cloudinary
+import cloudinary.uploader
+from dotenv import load_dotenv
 
-    <!-- Tailwind + DaisyUI -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
+# ------------------- Load .env -------------------
+load_dotenv()
 
-    <style>
-        .fade-in {
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
-</head>
+# ------------------- Flask Setup -------------------
+app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY", "change-this-secret-key")
 
-<body class="bg-base-100 text-base-content min-h-screen flex flex-col">
+# ------------------- ADMIN CONFIG -------------------
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 
-<!-- ================= NAVBAR ================= -->
-<div class="navbar bg-base-200 shadow-lg sticky top-0 z-50">
-    <div class="flex-1">
-        <a href="{{ url_for('index') }}" class="btn btn-ghost text-xl font-bold">
-            E-BookLibrary
-        </a>
-    </div>
+# ------------------- Decorators -------------------
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user_id" not in session:
+            flash("Please login first", "error")
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated_function
 
-    <div class="flex-none gap-2">
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user_id" not in session:
+            flash("Login required", "error")
+            return redirect(url_for("login"))
+        if not session.get("is_admin"):
+            flash("Admin access only", "error")
+            return redirect(url_for("index"))
+        return f(*args, **kwargs)
+    return decorated_function
 
-        {% if session.get("user_id") %}
-            <span class="font-semibold text-green-600">
-                👋 Welcome, {{ session.get("user_name", "User") }}
-            </span>
+# ------------------- Cloudinary -------------------
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET")
+)
 
-            {% if session.get("is_admin") %}
-                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-sm">
-                    Admin
-                </a>
-            {% endif %}
+# ------------------- Database -------------------
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-            <a href="{{ url_for('logout') }}" class="btn btn-error btn-sm">
-                Logout
-            </a>
-        {% else %}
-            <a href="{{ url_for('login') }}" class="btn btn-primary btn-sm">
-                Login
-            </a>
-            <a href="{{ url_for('register') }}" class="btn btn-outline btn-sm">
-                Register
-            </a>
-        {% endif %}
+app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL or \
+    "postgresql://chetan-yalij:3151@localhost:5432/ebooklib"
 
-    </div>
-</div>
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-<!-- ================= HERO ================= -->
-<div class="hero min-h-[70vh] bg-gradient-to-b from-primary/10 to-base-100">
-    <div class="hero-content text-center px-6">
-        <div class="max-w-lg">
+db = SQLAlchemy(app)
 
-            <h1 class="text-4xl sm:text-5xl font-extrabold mb-4">
-                Your Free Digital Library
-            </h1>
+# ------------------- MODELS -------------------
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(200))
+    name = db.Column(db.String(100))
+    is_admin = db.Column(db.Boolean, default=False)
 
-            <p class="text-lg opacity-80 mb-8">
-                Read thousands of books anytime, anywhere — completely free.
-            </p>
+class Book(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    author = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    category = db.Column(db.String(50), default="Uncategorized")
+    cover_url = db.Column(db.String(500))
+    pdf_url = db.Column(db.String(500))
 
-            <!-- ================= SEARCH ================= -->
-            <form method="GET" action="{{ url_for('search') }}" class="flex justify-center mt-8">
-                <div class="relative w-full max-w-xl">
+# ------------------- Create Tables + Admin -------------------
+with app.app_context():
+    db.create_all()
+    if ADMIN_EMAIL and ADMIN_PASSWORD:
+        admin = User.query.filter_by(email=ADMIN_EMAIL).first()
+        if not admin:
+            admin = User(
+                email=ADMIN_EMAIL,
+                password=generate_password_hash(ADMIN_PASSWORD),
+                is_admin=True
+            )
+            db.session.add(admin)
+            db.session.commit()
 
-                    <input
-                        id="searchInput"
-                        type="text"
-                        name="query"
-                        placeholder="Search books, authors..."
-                        autocomplete="off"
-                        class="w-full py-4 pl-6 pr-24 rounded-full shadow-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        oninput="handleSearchInput()"
-                        required
-                    >
+# =================== PUBLIC ROUTES ===================
+@app.route("/")
+def index():
+    books = Book.query.all()
+    return render_template("index.html", books=books)
 
-                    <button
-                        type="button"
-                        id="clearBtn"
-                        onclick="clearSearch()"
-                        class="hidden absolute right-14 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-xl transition">
-                        ✕
-                    </button>
+@app.route("/book/<int:book_id>")
+def book_detail(book_id):
+    book = Book.query.get_or_404(book_id)
+    return render_template("book_detail.html", book=book)
 
-                    <button
-                        type="submit"
-                        class="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-md transition transform hover:scale-105">
-                        🔍
-                    </button>
+# =================== AUTH ===================
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form["email"]
+        password = request.form["password"]
 
-                    <ul
-                        id="suggestions"
-                        class="hidden absolute w-full mt-2 bg-base-100 rounded-xl shadow-lg border border-base-200 overflow-hidden fade-in z-50 text-left">
-                    </ul>
+        user = User.query.filter_by(email=email).first()
 
-                </div>
-            </form>
+        if user and check_password_hash(user.password, password):
+            session["user_id"] = user.id
+            session["user_name"] = user.name
+            session["is_admin"] = user.is_admin
+            flash("Login successful", "success")
+            return redirect(url_for("index"))
 
-        </div>
-    </div>
-</div>
+        flash("Invalid credentials", "error")
+    return render_template("login.html")
 
-<!-- ================= FOOTER ================= -->
-<footer class="footer p-6 bg-base-200 text-base-content mt-auto">
-    <div class="max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div>
-            <h2 class="text-lg font-bold">EBook-Library</h2>
-            <p class="text-sm opacity-70">
-                Free & Open Source digital library project.<br>
-                Built for learning & sharing knowledge.
-            </p>
-        </div>
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("index"))
 
-        <div>
-            <h3 class="font-semibold mb-2">Quick Links</h3>
-            <ul class="menu menu-vertical p-0">
-                <li><a href="/about">About Us</a></li>
-                <li><a href="/contact">Contact Us</a></li>
-            </ul>
-        </div>
+# =================== REGISTER ===================
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        name = request.form["name"]
+        email = request.form["email"]
+        password = request.form["password"]
 
-        <div>
-            <h3 class="font-semibold mb-2">Project</h3>
-            <p class="text-sm opacity-70">
-                College Project • Free Learning Resource
-            </p>
-        </div>
-    </div>
-</footer>
+        if User.query.filter_by(email=email).first():
+            flash("User already exists", "error")
+            return redirect(url_for("register"))
 
-<!-- ================= SEARCH SCRIPT ================= -->
-<script>
-    let debounceTimer;
+        user = User(
+            name=name,
+            email=email,
+            password=generate_password_hash(password)
+        )
+        db.session.add(user)
+        db.session.commit()
 
-    async function handleSearchInput() {
-        clearTimeout(debounceTimer);
+        flash("Registration successful", "success")
+        return redirect(url_for("login"))
 
-        debounceTimer = setTimeout(async () => {
-            const input = document.getElementById("searchInput");
-            const list = document.getElementById("suggestions");
-            const clearBtn = document.getElementById("clearBtn");
-            const q = input.value.trim();
+    return render_template("register.html")
 
-            clearBtn.classList.toggle("hidden", !q);
+# =================== ADMIN DASHBOARD ===================
+@app.route("/admin")
+@admin_required
+def admin_dashboard():
+    total_books = Book.query.count()
+    total_authors = db.session.query(Book.author).distinct().count()
+    return render_template(
+        "admin_dashboard.html",
+        total_books=total_books,
+        total_authors=total_authors
+    )
 
-            if (q.length < 2) {
-                list.classList.add("hidden");
-                return;
-            }
+# =================== UPLOAD BOOK (FIXED) ===================
+@app.route("/upload", methods=["GET", "POST"])
+@admin_required
+def upload():
+    if request.method == "POST":
+        try:
+            title = request.form["title"]
+            author = request.form["author"]
+            description = request.form.get("description", "")
+            category = request.form.get("category", "Uncategorized")
 
-            try {
-                const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-                const data = await res.json();
+            if Book.query.filter_by(title=title, author=author).first():
+                flash("Book already exists", "error")
+                return redirect(url_for("upload"))
 
-                list.innerHTML = "";
+            # ---- Cover Upload ----
+            cover_url = None
+            cover = request.files.get("cover")
+            if cover and cover.filename:
+                cover_res = cloudinary.uploader.upload(cover)
+                cover_url = cover_res["secure_url"]
 
-                if (!data.length) {
-                    list.classList.add("hidden");
-                    return;
-                }
+            # ---- PDF Upload ----
+            pdf = request.files.get("pdf")
+            if not pdf or not pdf.filename:
+                flash("PDF required", "error")
+                return redirect(url_for("upload"))
 
-                data.forEach(item => {
-                    const li = document.createElement("li");
-                    li.innerHTML = `
-                        <div class="px-4 py-3 hover:bg-base-200 cursor-pointer">
-                            <strong>${item.title}</strong>
-                            <div class="text-xs opacity-70">${item.author}</div>
-                        </div>`;
-                    
-                    li.onclick = () => {
-                        window.location.href = `/book/${item.id}`;
-                    };
+            pdf_res = cloudinary.uploader.upload(
+                pdf,
+                resource_type="raw"
+            )
 
-                    list.appendChild(li);
-                });
+            book = Book(
+                title=title,
+                author=author,
+                description=description,
+                category=category,
+                cover_url=cover_url,
+                pdf_url=pdf_res["secure_url"]
+            )
 
-                list.classList.remove("hidden");
-            } catch (e) {
-                console.error("Search failed", e);
-            }
-        }, 300);
-    }
+            db.session.add(book)
+            db.session.commit()
 
-    function clearSearch() {
-        document.getElementById("searchInput").value = "";
-        document.getElementById("suggestions").classList.add("hidden");
-        document.getElementById("clearBtn").classList.add("hidden");
-        document.getElementById("searchInput").focus();
-    }
+            flash("Book uploaded successfully", "success")
+            return redirect(url_for("admin_dashboard"))
 
-    document.addEventListener("click", e => {
-        if (!e.target.closest(".relative")) {
-            document.getElementById("suggestions").classList.add("hidden");
-        }
-    });
-</script>
+        except Exception as e:
+            print("UPLOAD ERROR:", e)
+            flash("Upload failed. Check env variables.", "error")
+            return redirect(url_for("upload"))
 
-</body>
-</html>
+    return render_template("upload.html")
+
+# =================== RUN ===================
+if __name__ == "__main__":
+    app.run(debug=True)
