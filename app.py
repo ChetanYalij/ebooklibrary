@@ -119,6 +119,23 @@ def book_detail(book_id):
     book = Book.query.get_or_404(book_id)
     return render_template("book_detail.html", book=book)
 
+@app.route("/search")
+def search():
+    query = request.args.get("query", "").strip()
+    books = []
+
+    if query:
+        books = Book.query.filter(
+            (Book.title.ilike(f"%{query}%")) |
+            (Book.author.ilike(f"%{query}%"))
+        ).all()
+
+    return render_template(
+        "search_results.html",
+        books=books,
+        query=query
+    )
+
 # =================== AUTH ROUTES ===================
 @app.route("/register", methods=["GET", "POST"])
 def register():
