@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ------------------- Flask Setup -------------------
-app = Flask(__name__, template_folder='templates', static_folder='static')
+app = Flask(__name__, template_folder="templates", static_folder="static")
 app.secret_key = os.getenv("SECRET_KEY", "change-this-secret-key")
 
 # ------------------- ADMIN CONFIG -------------------
@@ -61,7 +61,7 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 if DATABASE_URL and "sslmode" not in DATABASE_URL:
-    DATABASE_URL = DATABASE_URL + "?sslmode=require"
+    DATABASE_URL += "?sslmode=require"
 
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -130,11 +130,20 @@ def search():
             (Book.author.ilike(f"%{query}%"))
         ).all()
 
-    return render_template(
-        "search_results.html",
-        books=books,
-        query=query
-    )
+    return render_template("search_results.html", books=books, query=query)
+
+@app.route("/api/search")
+def api_search():
+    q = request.args.get("q", "")
+    results = Book.query.filter(
+        (Book.title.ilike(f"%{q}%")) |
+        (Book.author.ilike(f"%{q}%"))
+    ).limit(5).all()
+
+    return jsonify([
+        {"id": b.id, "title": b.title, "author": b.author}
+        for b in results
+    ])
 
 # =================== AUTH ROUTES ===================
 @app.route("/register", methods=["GET", "POST"])
@@ -175,7 +184,7 @@ def login():
 @app.route("/logout")
 def logout():
     session.clear()
-    flash("Logged out", "success")
+    flash("Logged out successfully", "success")
     return redirect(url_for("index"))
 
 # =================== ADMIN ROUTES ===================
@@ -196,6 +205,12 @@ def admin_dashboard():
         category_stats=category_stats,
         recent_books=recent_books
     )
+
+@app.route("/admin/books")
+@admin_required
+def admin_books():
+    books = Book.query.all()
+    return render_template("admin_books.html", books=books)
 
 @app.route("/admin/upload", methods=["GET", "POST"])
 @admin_required
@@ -222,10 +237,40 @@ def upload_book():
 
         db.session.add(book)
         db.session.commit()
-        flash("Book uploaded", "success")
+        flash("Book uploaded successfully", "success")
         return redirect(url_for("admin_dashboard"))
 
     return render_template("upload.html")
+
+@app.route("/admin/upload_json", methods=["POST"])
+@admin_required
+def upload_json():
+    file = request.files.get("json_file")
+    data = json.load(file)
+
+    for b in data:
+        if not Book.query.filter_by(title=b["title"]).first():
+            db.session.add(Book(**b))
+
+    db.session.commit()
+    flash("JSON upload completed", "success")
+    return redirect(url_for("admin_dashboard"))
+
+@app.route("/admin/edit/<int:book_id>", methods=["GET", "POST"])
+@admin_required
+def edit_book(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    if request.method == "POST":
+        book.title = request.form["title"]
+        book.author = request.form["author"]
+        book.description = request.form.get("description", "")
+        book.category = request.form.get("category", "Uncategorized")
+        db.session.commit()
+        flash("Book updated", "success")
+        return redirect(url_for("admin_dashboard"))
+
+    return render_template("edit_book.html", book=book)
 
 @app.route("/admin/delete/<int:book_id>", methods=["POST"])
 @admin_required
@@ -233,7 +278,7 @@ def delete_book(book_id):
     book = Book.query.get_or_404(book_id)
     db.session.delete(book)
     db.session.commit()
-    flash("Book deleted", "success")
+    flash("Book deleted successfully", "success")
     return redirect(url_for("admin_dashboard"))
 
 # =================== RUN ===================
