@@ -109,6 +109,49 @@
     </div>
 </div>
 
+<!-- ================= ENHANCED CATEGORIES SECTION ================= -->
+<div class="max-w-6xl mx-auto px-6 py-10 w-full">
+    <h2 class="text-2xl font-bold text-center mb-6">📂📂 Categories</h2>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <a href="{{ url_for('search') }}?category=Programming"
+           class="btn btn-outline btn-primary h-20 flex flex-col justify-center">
+            💻 Programming
+        </a>
+
+        <a href="{{ url_for('search') }}?category=Education"
+           class="btn btn-outline btn-secondary h-20 flex flex-col justify-center">
+            🎓 Education
+        </a>
+
+        <a href="{{ url_for('search') }}?category=Novel"
+           class="btn btn-outline btn-accent h-20 flex flex-col justify-center">
+            📖 Novels
+        </a>
+
+        <a href="{{ url_for('search') }}?category=Science"
+           class="btn btn-outline h-20 flex flex-col justify-center">
+            🔬 Science
+        </a>
+
+        <a href="{{ url_for('search') }}?category=Technology"
+           class="btn btn-outline btn-info h-20 flex flex-col justify-center">
+            ⚙️ Technology
+        </a>
+
+        <a href="{{ url_for('search') }}?category=Biography"
+           class="btn btn-outline btn-success h-20 flex flex-col justify-center">
+            👤 Biography
+        </a>
+
+        <a href="{{ url_for('search') }}?category=Marathi"
+           class="btn btn-outline btn-warning h-20 flex flex-col justify-center">
+            🇮🇳 Marathi Books
+        </a>
+    </div>
+</div>
+<!-- ================= END CATEGORIES ================= -->
+
 <!-- ================= BOOKS SECTION ================= -->
 <div class="max-w-7xl mx-auto px-6 py-12 w-full">
     <h2 class="text-3xl font-bold mb-6 text-center">📚 Latest Books</h2>

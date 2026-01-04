@@ -96,9 +96,7 @@ with app.app_context():
             db.session.add(admin)
             db.session.commit()
 
-# =====================================================
 # ================== PUBLIC ROUTES ====================
-# =====================================================
 @app.route("/")
 def index():
     books = Book.query.order_by(Book.id.desc()).all()
@@ -119,16 +117,23 @@ def book_detail(book_id):
 
 @app.route("/search")
 def search():
-    query = request.args.get("query", "").strip()
-    books = []
-    if query:
-        books = Book.query.filter(
-            Book.title.ilike(f"%{query}%") |
-            Book.author.ilike(f"%{query}%")
-        ).all()
-    return render_template("search_page.html", books=books, query=query)
+    query = request.args.get("query")
+    category = request.args.get("category")
 
-# ================== READ ONLINE (FIXED – NO DOWNLOAD) ==================
+    if category:
+        books = Book.query.filter_by(category=category).all()
+    else:
+        books = Book.query.filter(
+            Book.title.ilike(f"%{query}%")
+        ).all()
+
+    return render_template(
+        "search_page.html",
+        books=books,
+        query=query or category
+    )
+
+# ================== READ ONLINE ==================
 @app.route("/read/<int:book_id>")
 @login_required
 def read_book(book_id):
@@ -146,9 +151,7 @@ def download_book(book_id):
     book = Book.query.get_or_404(book_id)
     return redirect(book.pdf_url)
 
-# =====================================================
 # ================== AUTH ROUTES ======================
-# =====================================================
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -186,9 +189,7 @@ def logout():
     flash("Logged out successfully", "success")
     return redirect(url_for("index"))
 
-# =====================================================
 # ================== ADMIN ROUTES =====================
-# =====================================================
 @app.route("/admin")
 @admin_required
 def admin_dashboard():
@@ -248,9 +249,7 @@ def delete_book(book_id):
     flash("Book deleted successfully", "success")
     return redirect(url_for("admin_dashboard"))
 
-# =====================================================
 # ================== API ROUTES =======================
-# =====================================================
 @app.route("/api/books")
 def api_books():
     books = Book.query.all()
@@ -279,9 +278,7 @@ def api_search():
         for b in books
     ])
 
-# =====================================================
 # ================== ERROR HANDLERS ===================
-# =====================================================
 @app.errorhandler(403)
 def forbidden(e):
     return "<h1>403 - Access Denied</h1>", 403
