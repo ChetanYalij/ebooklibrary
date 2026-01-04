@@ -1,100 +1,227 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Search Page</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 20px;
-            background-color: #f9f9f9;
-        }
-        .search-container {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        .search-box {
-            padding: 12px;
-            font-size: 18px;
-            width: 60%;
-            max-width: 500px;
-            border-radius: 30px;
-            border: 1px solid #ddd;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .search-button {
-            padding: 12px 20px;
-            font-size: 18px;
-            border: none;
-            border-radius: 30px;
-            background-color: #4285f4;
-            color: white;
-            cursor: pointer;
-            margin-left: 10px;
-        }
-        .results {
-            text-align: left;
-        }
-        .result-item {
-            background: white;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .result-title {
-            font-size: 18px;
-            color: #1a0dab;
-            margin: 0 0 5px 0;
-        }
-        .result-url {
-            color: #006621;
-            font-size: 14px;
-        }
-        .result-snippet {
-            color: #545454;
-            margin-top: 5px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book Search</title>
+
+<style>
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 20px;
+  }
+
+  h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+    color: #333;
+  }
+
+  .search-container {
+    max-width: 600px;
+    margin: 0 auto 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .search-box {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 30px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    outline: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  }
+
+  .search-box:focus {
+    border-color: #4285f4;
+    box-shadow: 0 2px 8px rgba(66,133,244,0.3);
+  }
+
+  .search-button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 30px;
+    background-color: #4285f4;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+
+  .search-button:hover {
+    background-color: #3367d6;
+  }
+
+  .results {
+    max-width: 700px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .book-card {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .book-info {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .book-cover {
+    width: 80px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex-shrink: 0;
+    background: #eee;
+  }
+
+  .book-text {
+    flex: 1;
+  }
+
+  .book-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    color: #1a0dab;
+  }
+
+  .book-author {
+    font-size: 0.9rem;
+    opacity: 0.7;
+    margin: 4px 0;
+  }
+
+  .book-category {
+    font-size: 0.8rem;
+    background: #e0f3ff;
+    color: #0288d1;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-top: 2px;
+  }
+
+  .book-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .book-actions a {
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    color: white;
+    transition: 0.3s;
+  }
+
+  .read-btn { background: #28a745; }
+  .read-btn:hover { background: #218838; }
+
+  .download-btn { background: #007bff; }
+  .download-btn:hover { background: #0056b3; }
+
+  @media (min-width: 640px) {
+    .book-card {
+      flex-direction: row;
+      align-items: flex-start;
+    }
+    .book-info { flex: 1; }
+    .book-actions { flex-direction: column; flex-shrink: 0; width: 120px; }
+  }
+</style>
 </head>
 <body>
 
-    <div class="search-container">
-        <h1>My Search Engine</h1>
-        <input type="text" class="search-box" placeholder="Search..." id="query">
-        <button class="search-button" onclick="performSearch()">Search</button>
-    </div>
+<h1>🔎 Book Search</h1>
 
-    <div class="results" id="results">
-        <!-- Results will appear here after "search" -->
-        <div class="result-item">
-            <h3 class="result-title">Example Result 1</h3>
-            <div class="result-url">https://example.com/page1</div>
-            <p class="result-snippet">This is a sample search result snippet. In a real search engine, this would show relevant text from the page matching your query.</p>
-        </div>
-        <div class="result-item">
-            <h3 class="result-title">Example Result 2</h3>
-            <div class="result-url">https://example.com/page2</div>
-            <p class="result-snippet">Another mock result to show how the "after search" screen looks with multiple results listed below the search bar.</p>
-        </div>
-        <div class="result-item">
-            <h3 class="result-title">Example Result 3</h3>
-            <div class="result-url">https://example.com/page3</div>
-            <p class="result-snippet">Feel free to replace these with real dynamic results using JavaScript and an API.</p>
-        </div>
-    </div>
+<div class="search-container">
+  <input type="text" class="search-box" id="query" placeholder="Type a book title or author...">
+  <button class="search-button" onclick="performSearch()">Search</button>
+</div>
 
-    <script>
-        function performSearch() {
-            const query = document.getElementById('query').value;
-            if (query) {
-                alert('Searching for: ' + query + '\n(In a real app, this would fetch and display actual results here.)');
-            }
-        }
-    </script>
+<div class="results" id="results">
+
+  <!-- Example Book Card -->
+  <div class="book-card">
+    <div class="book-info">
+      <img src="https://via.placeholder.com/80x120" alt="Book Cover" class="book-cover">
+      <div class="book-text">
+        <p class="book-title">The Great Adventure</p>
+        <p class="book-author">by John Smith</p>
+        <span class="book-category">Fiction</span>
+      </div>
+    </div>
+    <div class="book-actions">
+      <a href="#" class="read-btn">Read Online</a>
+      <a href="#" class="download-btn">Download PDF</a>
+    </div>
+  </div>
+
+  <div class="book-card">
+    <div class="book-info">
+      <img src="https://via.placeholder.com/80x120" alt="Book Cover" class="book-cover">
+      <div class="book-text">
+        <p class="book-title">Learning Python</p>
+        <p class="book-author">by Jane Doe</p>
+        <span class="book-category">Education</span>
+      </div>
+    </div>
+    <div class="book-actions">
+      <a href="#" class="read-btn">Read Online</a>
+      <a href="#" class="download-btn">Download PDF</a>
+    </div>
+  </div>
+
+  <p id="no-results" style="text-align:center; opacity:0.6; display:none;">
+    ❌ No books found.
+  </p>
+</div>
+
+<script>
+function performSearch() {
+  const query = document.getElementById('query').value.trim();
+  const results = document.getElementById('results');
+  const noResults = document.getElementById('no-results');
+
+  if (!query) return alert("Please enter a search term!");
+
+  // Dummy search simulation
+  Array.from(results.querySelectorAll('.book-card')).forEach(card => {
+    const title = card.querySelector('.book-title').textContent.toLowerCase();
+    const author = card.querySelector('.book-author').textContent.toLowerCase();
+    if (title.includes(query.toLowerCase()) || author.includes(query.toLowerCase())) {
+      card.style.display = 'flex';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+
+  // Show "No books found" message
+  const visible = results.querySelectorAll('.book-card:not([style*="display: none"])');
+  noResults.style.display = visible.length === 0 ? 'block' : 'none';
+}
+</script>
 
 </body>
 </html>

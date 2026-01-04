@@ -1,81 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Login • EBook Library</title>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Login • EBook Library</title>
 
-  <!-- Tailwind + DaisyUI -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link
-    href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
-    rel="stylesheet"
-  />
-</head>
+        <!-- Tailwind + DaisyUI -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"
+            rel="stylesheet"
+            />
+    </head>
 
-<body class="bg-base-200 flex items-center justify-center min-h-screen">
+    <body class="bg-base-200 flex items-center justify-center min-h-screen px-4">
 
-  <div class="card w-full max-w-sm shadow-2xl bg-base-100">
-    <div class="card-body">
+        <div class="card w-full max-w-sm shadow-2xl bg-base-100">
+            <div class="card-body p-6 sm:p-8">
 
-      <!-- User Icon -->
-      <div class="flex justify-center mb-4">
-        <div class="avatar placeholder">
-          <div class="bg-primary text-primary-content rounded-full w-20 h-20 text-3xl font-bold flex items-center justify-center">
-            C
-          </div>
+                <!-- User Icon -->
+                <div class="flex justify-center mb-4">
+                    <div class="avatar placeholder">
+                        <div
+                            class="bg-primary text-primary-content rounded-full
+                            w-16 h-16 sm:w-20 sm:h-20
+                            text-2xl sm:text-3xl font-bold
+                            flex items-center justify-center">
+                            C
+                        </div>
+                    </div>
+                </div>
+
+                <h2 class="text-lg sm:text-xl font-bold text-center">
+                    Sign in
+                </h2>
+
+                <p class="text-center text-xs sm:text-sm text-gray-500 mb-4">
+                    Use your email to continue
+                </p>
+
+                <!-- Login Form -->
+                <form method="POST">
+
+                    <label class="form-control w-full mb-3">
+                        <span class="label-text text-sm">Email</span>
+                        <input
+                            type="email"
+                            name="email"
+                            required
+                            placeholder="example@gmail.com"
+                            class="input input-bordered w-full text-sm sm:text-base"
+                            />
+                    </label>
+
+                    <label class="form-control w-full mb-4">
+                        <span class="label-text text-sm">Password</span>
+                        <input
+                            type="password"
+                            name="password"
+                            required
+                            placeholder="••••••••"
+                            class="input input-bordered w-full text-sm sm:text-base"
+                            />
+                    </label>
+
+                    <button type="submit" class="btn btn-primary w-full">
+                        Login
+                    </button>
+                </form>
+
+                <!-- Links -->
+                <div class="text-center mt-4 text-xs sm:text-sm">
+                    <a href="{{ url_for('register') }}"
+                       class="text-blue-500 hover:underline">
+                        Create account
+                    </a>
+                    <span class="mx-1">•</span>
+                    <a href="{{ url_for('index') }}"
+                       class="text-gray-500 hover:underline">
+                        Back to home
+                    </a>
+                </div>
+
+            </div>
         </div>
-      </div>
 
-      <h2 class="text-xl font-bold text-center">
-        Sign in
-      </h2>
-      <p class="text-center text-sm text-gray-500 mb-4">
-        Use your email to continue
-      </p>
-
-      <!-- Login Form -->
-      <form method="POST">
-
-        <label class="form-control w-full mb-3">
-          <span class="label-text">Email</span>
-          <input
-            type="email"
-            name="email"
-            required
-            placeholder="example@gmail.com"
-            class="input input-bordered w-full"
-          />
-        </label>
-
-        <label class="form-control w-full mb-4">
-          <span class="label-text">Password</span>
-          <input
-            type="password"
-            name="password"
-            required
-            placeholder="••••••••"
-            class="input input-bordered w-full"
-          />
-        </label>
-
-        <button type="submit" class="btn btn-primary w-full">
-          Login
-        </button>
-      </form>
-
-      <!-- Links -->
-      <div class="text-center mt-4 text-sm">
-        <a href="{{ url_for('register') }}" class="text-blue-500 hover:underline">
-          Create account
-        </a>
-        <span class="mx-1">•</span>
-        <a href="{{ url_for('index') }}" class="text-gray-500 hover:underline">
-          Back to home
-        </a>
-      </div>
-
-    </div>
-  </div>
-
-</body>
+    </body>
 </html>

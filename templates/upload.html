@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload New Book</title>
+
     <style>
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
@@ -11,6 +12,7 @@
             padding: 40px;
             margin: 0;
         }
+
         .container {
             max-width: 800px;
             margin: 0 auto;
@@ -19,21 +21,26 @@
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
+
         h1 {
             text-align: center;
             color: #333;
             margin-bottom: 30px;
         }
+
         .form-group {
             margin-bottom: 20px;
         }
+
         label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
             color: #444;
         }
+
         input[type="text"],
+        input[type="file"],
         textarea,
         select,
         .select2-container .select2-selection {
@@ -44,13 +51,16 @@
             font-size: 16px;
             box-sizing: border-box;
         }
+
         textarea {
             resize: vertical;
             min-height: 100px;
         }
+
         .required {
             color: #e74c3c;
         }
+
         button {
             background: #007bff;
             color: white;
@@ -61,9 +71,11 @@
             cursor: pointer;
             transition: background 0.3s;
         }
+
         button:hover {
             background: #0056b3;
         }
+
         .back-link {
             display: block;
             text-align: center;
@@ -72,9 +84,7 @@
             text-decoration: none;
             font-size: 16px;
         }
-        .back-link:hover {
-            text-decoration: underline;
-        }
+
         .flash-message {
             padding: 15px;
             margin-bottom: 20px;
@@ -82,18 +92,58 @@
             text-align: center;
             font-weight: bold;
         }
+
         .success { background: #d4edda; color: #155724; }
         .error { background: #f8d7da; color: #721c24; }
+
+        /* ================= MOBILE FRIENDLY ================= */
+        @media (max-width: 600px) {
+
+            body {
+                padding: 15px;
+            }
+
+            .container {
+                padding: 20px;
+                border-radius: 10px;
+            }
+
+            h1 {
+                font-size: 22px;
+                margin-bottom: 20px;
+            }
+
+            label {
+                font-size: 14px;
+            }
+
+            input[type="text"],
+            input[type="file"],
+            textarea,
+            select {
+                font-size: 14px;
+                padding: 10px;
+            }
+
+            button {
+                width: 100%;
+                font-size: 16px;
+                padding: 12px;
+            }
+
+            .back-link {
+                font-size: 14px;
+            }
+        }
     </style>
 
-    <!-- Select2 CDN for advanced searchable + tags dropdown -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
         $(document).ready(function() {
-            // Advanced category dropdown with tags (user can type new category)
             $('#category').select2({
                 tags: true,
                 placeholder: "Select or type a new category",
@@ -103,71 +153,77 @@
         });
     </script>
 </head>
+
 <body>
-    <div class="container">
-        <h1>Upload New E-Book</h1>
 
-        <!-- Flash Messages -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash-message {{ 'success' if category == 'success' else 'error' }}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+<div class="container">
+    <h1>Upload New E-Book</h1>
 
-        <form method="POST" action="{{ url_for('upload_book') }}" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="title">Book Title <span class="required">*</span></label>
-                <input type="text" name="title" id="title" required>
-            </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash-message {{ 'success' if category == 'success' else 'error' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 
-            <div class="form-group">
-                <label for="author">Author <span class="required">*</span></label>
-                <input type="text" name="author" id="author" required>
-            </div>
+    <form method="POST" action="{{ url_for('upload_book') }}" enctype="multipart/form-data">
 
-            <div class="form-group">
-                <label for="description">Description (Optional)</label>
-                <textarea name="description" id="description"></textarea>
-            </div>
+        <div class="form-group">
+            <label>Book Title <span class="required">*</span></label>
+            <input type="text" name="title" required>
+        </div>
 
-            <div class="form-group">
-                <label for="category">Category <span class="required">*</span></label>
-                <select name="category" id="category" required>
-                    <option value="">Select or type a new category</option>
-                    <option value="General">General</option>
-                    <option value="Novel">Novel</option>
-                    <option value="Story">Story</option>
-                    <option value="Poetry">Poetry</option>
-                    <option value="Education">Education</option>
-                    <option value="Biography">Biography</option>
-                    <option value="Science">Science</option>
-                    <option value="Technology">Technology</option>
-                    <option value="Self Help">Self Help</option>
-                    <option value="Fiction">Fiction</option>
-                    <option value="Non-Fiction">Non-Fiction</option>
-                </select>
-            </div>
+        <div class="form-group">
+            <label>Author <span class="required">*</span></label>
+            <input type="text" name="author" required>
+        </div>
 
-            <div class="form-group">
-                <label for="cover">Cover Image (Optional)</label>
-                <input type="file" name="cover" id="cover" accept="image/*">
-            </div>
+        <div class="form-group">
+            <label>Description (Optional)</label>
+            <textarea name="description"></textarea>
+        </div>
 
-            <div class="form-group">
-                <label for="pdf">PDF File <span class="required">*</span></label>
-                <input type="file" name="pdf" id="pdf" accept=".pdf" required>
-            </div>
-/
-            <div style="text-align: center;">
-                <button type="submit">Upload Book</button>
-            </div>
-        </form>
+        <div class="form-group">
+            <label>Category <span class="required">*</span></label>
+            <select name="category" id="category" required>
+                <option value="">Select or type a new category</option>
+                <option>General</option>
+                <option>Novel</option>
+                <option>Story</option>
+                <option>Poetry</option>
+                <option>Education</option>
+                <option>Biography</option>
+                <option>Science</option>
+                <option>Technology</option>
+                <option>Self Help</option>
+                <option>Fiction</option>
+                <option>Non-Fiction</option>
+            </select>
+        </div>
 
-        <a href="{{ url_for('admin_dashboard') }}" class="back-link">← Back to Dashboard</a>
-    </div>
+        <div class="form-group">
+            <label>Cover Image (Optional)</label>
+            <input type="file" name="cover" accept="image/*">
+        </div>
+
+        <div class="form-group">
+            <label>PDF File <span class="required">*</span></label>
+            <input type="file" name="pdf" accept=".pdf" required>
+        </div>
+
+        <div style="text-align:center;">
+            <button type="submit">Upload Book</button>
+        </div>
+
+    </form>
+
+    <a href="{{ url_for('admin_dashboard') }}" class="back-link">
+        ← Back to Dashboard
+    </a>
+</div>
+
 </body>
 </html>

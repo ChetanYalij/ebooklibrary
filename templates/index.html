@@ -1,197 +1,218 @@
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <title>E-BookLibrary • Free Books</title>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>E-BookLibrary • Free Books</title>
 
-        <!-- Tailwind + DaisyUI -->
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
+    <!-- Tailwind + DaisyUI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet"/>
 
-        <style>
-            .fade-in {
-                animation: fadeIn 0.3s ease-in-out;
-            }
-            @keyframes fadeIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(-10px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-        </style>
-    </head>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
 
-    <body class="bg-base-100 text-base-content min-h-screen flex flex-col">
+<body class="bg-base-100 text-base-content min-h-screen flex flex-col">
 
-        <!-- ================= NAVBAR ================= -->
-        <div class="navbar bg-base-200 shadow-lg sticky top-0 z-50">
-            <div class="flex-1">
-                <a href="{{ url_for('index') }}" class="btn btn-ghost text-xl font-bold">
-                    E-BookLibrary
+<!-- ================= NAVBAR ================= -->
+<div class="navbar bg-base-200 shadow-lg sticky top-0 z-50">
+    <div class="flex-1">
+        <a href="{{ url_for('index') }}" class="btn btn-ghost text-xl font-bold">
+            E-BookLibrary
+        </a>
+    </div>
+
+    <div class="flex-none gap-2">
+        {% if session.get("user_id") %}
+            <span class="hidden sm:block font-semibold">
+                Hello, {{ session.get("user_name","User") }}
+            </span>
+
+            {% if session.get("is_admin") %}
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-warning btn-sm">
+                    Admin
                 </a>
-            </div>
+            {% endif %}
 
-            <div class="flex-none gap-2">
-                <a href="{{ url_for('login') }}" class="btn btn-primary btn-sm">
-                    Login
-                </a>
-            </div>
-        </div>
+            <a href="{{ url_for('logout') }}" class="btn btn-error btn-sm">
+                Logout
+            </a>
+        {% else %}
+            <a href="{{ url_for('login') }}" class="btn btn-primary btn-sm">
+                Login
+            </a>
+            <a href="{{ url_for('register') }}" class="btn btn-outline btn-sm">
+                Register
+            </a>
+        {% endif %}
+    </div>
+</div>
 
-        <!-- ================= HERO ================= -->
-        <div class="hero min-h-[70vh] bg-gradient-to-b from-primary/10 to-base-100">
-            <div class="hero-content text-center px-6">
-                <div class="max-w-lg">
+<!-- ================= HERO ================= -->
+<div class="hero min-h-[70vh] bg-gradient-to-b from-primary/10 to-base-100">
+    <div class="hero-content text-center px-6">
+        <div class="max-w-lg">
 
-                    <h1 class="text-4xl sm:text-5xl font-extrabold mb-4">
-                        Your Free Digital Library
-                    </h1>
+            <h1 class="text-4xl sm:text-5xl font-extrabold mb-4">
+                Your Free Digital Library
+            </h1>
 
-                    <p class="text-lg opacity-80 mb-8">
-                        Read thousands of books anytime, anywhere — completely free.
-                    </p>
+            <p class="text-lg opacity-80 mb-8">
+                Read thousands of books anytime, anywhere — completely free.
+            </p>
 
-                    <!-- ================= SEARCH ================= -->
-                    <form method="GET" action="{{ url_for('search') }}" class="flex justify-center mt-8">
-                        <div class="relative w-full max-w-xl">
+            <!-- ================= SEARCH ================= -->
+            <form method="GET" action="{{ url_for('search') }}" class="flex justify-center mt-8">
+                <div class="relative w-full max-w-xl">
 
-                            <input
-                                id="searchInput"
-                                type="text"
-                                name="query"
-                                placeholder="Search books, authors..."
-                                autocomplete="off"
-                                class="w-full py-4 pl-6 pr-24 rounded-full shadow-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                oninput="handleSearchInput()"
-                                required
-                            >
+                    <input
+                        id="searchInput"
+                        type="text"
+                        name="query"
+                        placeholder="Search books, authors..."
+                        autocomplete="off"
+                        class="w-full py-4 pl-6 pr-24 rounded-full shadow-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        oninput="handleSearchInput()"
+                        required
+                    >
 
-                            <button
-                                type="button"
-                                id="clearBtn"
-                                onclick="clearSearch()"
-                                class="hidden absolute right-14 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-xl transition">
-                                ✕
-                            </button>
+                    <button
+                        type="button"
+                        id="clearBtn"
+                        onclick="clearSearch()"
+                        class="hidden absolute right-14 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-xl">
+                        ✕
+                    </button>
 
-                            <button
-                                type="submit"
-                                class="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-md transition transform hover:scale-105">
-                                🔍
-                            </button>
+                    <button
+                        type="submit"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-md">
+                        🔍
+                    </button>
 
-                            <ul
-                                id="suggestions"
-                                class="hidden absolute w-full mt-2 bg-base-100 rounded-xl shadow-lg border border-base-200 overflow-hidden fade-in z-50 text-left">
-                            </ul>
-
-                        </div>
-                    </form>
-
-                </div>
-            </div>
-        </div>
-
-        <!-- ================= FOOTER ================= -->
-        <footer class="footer p-6 bg-base-200 text-base-content mt-auto">
-            <div class="max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                    <h2 class="text-lg font-bold">EBook-Library</h2>
-                    <p class="text-sm opacity-70">
-                        Free & Open Source digital library project.<br>
-                        Built for learning & sharing knowledge.
-                    </p>
-                </div>
-
-                <div>
-                    <h3 class="font-semibold mb-2">Quick Links</h3>
-                    <ul class="menu menu-vertical p-0">
-                        <li><a href="/about">About Us</a></li>
-                        <li><a href="/contact">Contact Us</a></li>
+                    <ul id="suggestions"
+                        class="hidden absolute w-full mt-2 bg-base-100 rounded-xl shadow-lg border overflow-hidden fade-in z-50 text-left">
                     </ul>
-                </div>
 
-                <div>
-                    <h3 class="font-semibold mb-2">Project</h3>
-                    <p class="text-sm opacity-70">
-                        College Project • Free Learning Resource
-                    </p>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<!-- ================= BOOKS SECTION ================= -->
+<div class="max-w-7xl mx-auto px-6 py-12 w-full">
+    <h2 class="text-3xl font-bold mb-6 text-center">📚 Latest Books</h2>
+
+    {% if books %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        {% for book in books %}
+        <div class="card bg-base-100 shadow-xl">
+            {% if book.cover_url %}
+            <figure>
+                <img src="{{ book.cover_url }}" class="h-56 w-full object-cover"/>
+            </figure>
+            {% endif %}
+            <div class="card-body">
+                <h2 class="card-title text-lg">{{ book.title }}</h2>
+                <p class="text-sm opacity-70">{{ book.author }}</p>
+
+                <div class="card-actions justify-end mt-4">
+                    <a href="{{ url_for('book_detail', book_id=book.id) }}"
+                       class="btn btn-primary btn-sm">
+                        View Book
+                    </a>
                 </div>
             </div>
-        </footer>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+        <p class="text-center opacity-60">No books available.</p>
+    {% endif %}
+</div>
 
-        <!-- ================= SEARCH SCRIPT ================= -->
-        <script>
-            let debounceTimer;
+<!-- ================= FOOTER ================= -->
+<footer class="footer p-6 bg-base-200 text-base-content mt-auto">
+    <div class="max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+            <h2 class="text-lg font-bold">EBook-Library</h2>
+            <p class="text-sm opacity-70">
+                Free & Open Source digital library project.
+            </p>
+        </div>
 
-            async function handleSearchInput() {
-                clearTimeout(debounceTimer);
+        <div>
+            <h3 class="font-semibold mb-2">Quick Links</h3>
+            <ul class="menu menu-vertical p-0">
+                <li><a href="/about">About Us</a></li>
+                <li><a href="/contact">Contact Us</a></li>
+            </ul>
+        </div>
 
-                debounceTimer = setTimeout(async () => {
-                    const input = document.getElementById("searchInput");
-                    const list = document.getElementById("suggestions");
-                    const clearBtn = document.getElementById("clearBtn");
-                    const q = input.value.trim();
+        <div>
+            <h3 class="font-semibold mb-2">Project</h3>
+            <p class="text-sm opacity-70">
+                College Project • Free Learning Resource
+            </p>
+        </div>
+    </div>
+</footer>
 
-                    clearBtn.classList.toggle("hidden", !q);
+<!-- ================= SEARCH SCRIPT ================= -->
+<script>
+let debounceTimer;
 
-                    if (q.length < 2) {
-                        list.classList.add("hidden");
-                        return;
-                    }
+async function handleSearchInput() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(async () => {
+        const q = searchInput.value.trim();
+        clearBtn.classList.toggle("hidden", !q);
 
-                    try {
-                        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-                        const data = await res.json();
+        if (q.length < 2) {
+            suggestions.classList.add("hidden");
+            return;
+        }
 
-                        list.innerHTML = "";
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        suggestions.innerHTML = "";
 
-                        if (!data.length) {
-                            list.classList.add("hidden");
-                            return;
-                        }
+        if (!data.length) {
+            suggestions.classList.add("hidden");
+            return;
+        }
 
-                        data.forEach(item => {
-                            const li = document.createElement("li");
-                            li.innerHTML = `
-                                <div class="px-4 py-3 hover:bg-base-200 cursor-pointer">
-                                    <strong>${item.title}</strong>
-                                    <div class="text-xs opacity-70">${item.author}</div>
-                                </div>`;
-                            
-                            /* 🔴 STEP 6 IMPORTANT CHANGE */
-                            li.onclick = () => {
-                                window.location.href = `/book/${item.id}`;
-                            };
+        data.forEach(item => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+                <div class="px-4 py-3 hover:bg-base-200 cursor-pointer">
+                    <strong>${item.title}</strong>
+                    <div class="text-xs opacity-70">${item.author}</div>
+                </div>`;
+            li.onclick = () => window.location.href = `/book/${item.id}`;
+            suggestions.appendChild(li);
+        });
 
-                            list.appendChild(li);
-                        });
+        suggestions.classList.remove("hidden");
+    }, 300);
+}
 
-                        list.classList.remove("hidden");
-                    } catch (e) {
-                        console.error("Search failed", e);
-                    }
-                }, 300);
-            }
+function clearSearch() {
+    searchInput.value = "";
+    suggestions.classList.add("hidden");
+    clearBtn.classList.add("hidden");
+}
+</script>
 
-            function clearSearch() {
-                document.getElementById("searchInput").value = "";
-                document.getElementById("suggestions").classList.add("hidden");
-                document.getElementById("clearBtn").classList.add("hidden");
-                document.getElementById("searchInput").focus();
-            }
-
-            document.addEventListener("click", e => {
-                if (!e.target.closest(".relative")) {
-                    document.getElementById("suggestions").classList.add("hidden");
-                }
-            });
-        </script>
-
-    </body>
+</body>
 </html>
