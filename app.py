@@ -10,8 +10,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import cloudinary
 import cloudinary.uploader
 from dotenv import load_dotenv
-from flask import Response
-import requests
 
 # ================== LOAD ENV ==================
 load_dotenv()
@@ -49,6 +47,9 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200))
     is_admin = db.Column(db.Boolean, default=False)
+
+    def check_password(self, password_input):
+        return check_password_hash(self.password, password_input)
 
 class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -96,7 +97,7 @@ with app.app_context():
             db.session.add(admin)
             db.session.commit()
 
-# ================== PUBLIC ROUTES ====================
+# ================== PUBLIC ROUTES ==================
 @app.route("/")
 def index():
     books = Book.query.order_by(Book.id.desc()).all()
@@ -133,31 +134,28 @@ def search():
         query=query or category
     )
 
-# ================== READ ONLINE ==================
+# ================== READ & DOWNLOAD ==================
 @app.route("/read/<int:book_id>")
 @login_required
 def read_book(book_id):
     book = Book.query.get_or_404(book_id)
-
-    google_viewer = (
-        "https://docs.google.com/gview?embedded=true&url=" + book.pdf_url
-    )
+    google_viewer = "https://docs.google.com/gview?embedded=true&url=" + book.pdf_url
     return redirect(google_viewer)
 
-# ================== DOWNLOAD ==================
 @app.route("/download/<int:book_id>")
 @login_required
 def download_book(book_id):
     book = Book.query.get_or_404(book_id)
     return redirect(book.pdf_url)
 
-# ================== AUTH ROUTES ======================
+# ================== AUTH ROUTES ==================
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
         if User.query.filter_by(email=request.form["email"]).first():
             flash("Email already exists", "error")
             return redirect(url_for("register"))
+
         user = User(
             name=request.form["name"],
             email=request.form["email"],
@@ -165,22 +163,29 @@ def register():
         )
         db.session.add(user)
         db.session.commit()
+
         flash("Registered successfully", "success")
         return redirect(url_for("login"))
+
     return render_template("register.html")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        user = User.query.filter_by(email=request.form["email"]).first()
-        if user and check_password_hash(user.password, request.form["password"]):
+        email = request.form["email"]
+        password = request.form["password"]
+        user = User.query.filter_by(email=email).first()
+
+        if user and user.check_password(password):
             session["user_id"] = user.id
+            session["user_name"] = user.name      # ✅ FIXED
             session["is_admin"] = user.is_admin
             flash("Login successful!", "success")
-            return redirect(
-                url_for("admin_dashboard") if user.is_admin else url_for("index")
-            )
-        flash("Invalid email or password", "error")
+            return redirect(url_for("index"))
+        else:
+            flash("Invalid email or password.", "error")
+            return redirect(url_for("login"))
+
     return render_template("login.html")
 
 @app.route("/logout")
@@ -189,7 +194,7 @@ def logout():
     flash("Logged out successfully", "success")
     return redirect(url_for("index"))
 
-# ================== ADMIN ROUTES =====================
+# ================== ADMIN ROUTES ==================
 @app.route("/admin")
 @admin_required
 def admin_dashboard():
@@ -249,7 +254,7 @@ def delete_book(book_id):
     flash("Book deleted successfully", "success")
     return redirect(url_for("admin_dashboard"))
 
-# ================== API ROUTES =======================
+# ================== API ROUTES ==================
 @app.route("/api/books")
 def api_books():
     books = Book.query.all()
@@ -278,7 +283,7 @@ def api_search():
         for b in books
     ])
 
-# ================== ERROR HANDLERS ===================
+# ================== ERROR HANDLERS ==================
 @app.errorhandler(403)
 def forbidden(e):
     return "<h1>403 - Access Denied</h1>", 403
@@ -289,9 +294,4 @@ def not_found(e):
 
 # ================== RUN ==================
 if __name__ == "__main__":
-    app.run(
-        debug=True,
-        host="0.0.0.0",
-        port=5000
-    )
-
+    app.run(debug=True, host="0.0.0.0", port=5000)

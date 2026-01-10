@@ -23,14 +23,12 @@
   .search-container {
     max-width: 600px;
     margin: 0 auto 30px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    position: relative;
   }
 
   .search-box {
     width: 100%;
-    padding: 12px 16px;
+    padding: 12px 45px 12px 16px;
     border-radius: 30px;
     border: 1px solid #ccc;
     font-size: 1rem;
@@ -38,24 +36,15 @@
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
   }
 
-  .search-box:focus {
-    border-color: #4285f4;
-    box-shadow: 0 2px 8px rgba(66,133,244,0.3);
-  }
-
-  .search-button {
-    padding: 12px 20px;
-    border: none;
-    border-radius: 30px;
-    background-color: #4285f4;
-    color: white;
-    font-size: 1rem;
+  .clear-btn {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
     cursor: pointer;
-    transition: background 0.3s;
-  }
-
-  .search-button:hover {
-    background-color: #3367d6;
+    font-size: 18px;
+    color: #888;
+    display: none;
   }
 
   .results {
@@ -79,7 +68,6 @@
   .book-info {
     display: flex;
     gap: 12px;
-    align-items: flex-start;
   }
 
   .book-cover {
@@ -87,12 +75,7 @@
     height: 120px;
     object-fit: cover;
     border-radius: 6px;
-    flex-shrink: 0;
     background: #eee;
-  }
-
-  .book-text {
-    flex: 1;
   }
 
   .book-title {
@@ -115,13 +98,15 @@
     padding: 2px 6px;
     border-radius: 4px;
     display: inline-block;
-    margin-top: 2px;
+  }
+
+  .highlight {
+    background: yellow;
   }
 
   .book-actions {
     display: flex;
     gap: 10px;
-    flex-wrap: wrap;
   }
 
   .book-actions a {
@@ -132,96 +117,27 @@
     font-size: 0.9rem;
     text-decoration: none;
     color: white;
-    transition: 0.3s;
   }
 
   .read-btn { background: #28a745; }
-  .read-btn:hover { background: #218838; }
-
   .download-btn { background: #007bff; }
-  .download-btn:hover { background: #0056b3; }
+
+  #no-results {
+    text-align: center;
+    opacity: 0.6;
+    display: none;
+  }
 
   @media (min-width: 640px) {
-    .book-card {
-      flex-direction: row;
-      align-items: flex-start;
-    }
-    .book-info { flex: 1; }
-    .book-actions { flex-direction: column; flex-shrink: 0; width: 120px; }
+    .book-card { flex-direction: row; }
+    .book-actions { flex-direction: column; width: 120px; }
   }
 </style>
 </head>
 <body>
 
-<h1>🔎 Book Search</h1>
-
-<div class="search-container">
-  <input type="text" class="search-box" id="query" placeholder="Type a book title or author...">
-  <button class="search-button" onclick="performSearch()">Search</button>
-</div>
-
 <div class="results" id="results">
-
-  <!-- Example Book Card -->
-  <div class="book-card">
-    <div class="book-info">
-      <img src="https://via.placeholder.com/80x120" alt="Book Cover" class="book-cover">
-      <div class="book-text">
-        <p class="book-title">The Great Adventure</p>
-        <p class="book-author">by John Smith</p>
-        <span class="book-category">Fiction</span>
-      </div>
-    </div>
-    <div class="book-actions">
-      <a href="#" class="read-btn">Read Online</a>
-      <a href="#" class="download-btn">Download PDF</a>
-    </div>
-  </div>
-
-  <div class="book-card">
-    <div class="book-info">
-      <img src="https://via.placeholder.com/80x120" alt="Book Cover" class="book-cover">
-      <div class="book-text">
-        <p class="book-title">Learning Python</p>
-        <p class="book-author">by Jane Doe</p>
-        <span class="book-category">Education</span>
-      </div>
-    </div>
-    <div class="book-actions">
-      <a href="#" class="read-btn">Read Online</a>
-      <a href="#" class="download-btn">Download PDF</a>
-    </div>
-  </div>
-
-  <p id="no-results" style="text-align:center; opacity:0.6; display:none;">
-    ❌ No books found.
-  </p>
+  <p id="no-results">❌ No books found</p>
 </div>
-
-<script>
-function performSearch() {
-  const query = document.getElementById('query').value.trim();
-  const results = document.getElementById('results');
-  const noResults = document.getElementById('no-results');
-
-  if (!query) return alert("Please enter a search term!");
-
-  // Dummy search simulation
-  Array.from(results.querySelectorAll('.book-card')).forEach(card => {
-    const title = card.querySelector('.book-title').textContent.toLowerCase();
-    const author = card.querySelector('.book-author').textContent.toLowerCase();
-    if (title.includes(query.toLowerCase()) || author.includes(query.toLowerCase())) {
-      card.style.display = 'flex';
-    } else {
-      card.style.display = 'none';
-    }
-  });
-
-  // Show "No books found" message
-  const visible = results.querySelectorAll('.book-card:not([style*="display: none"])');
-  noResults.style.display = visible.length === 0 ? 'block' : 'none';
-}
-</script>
-
 </body>
 </html>
