@@ -254,6 +254,36 @@ def delete_book(book_id):
     flash("Book deleted successfully", "success")
     return redirect(url_for("admin_dashboard"))
 
+@app.route("/admin/edit-pdf/<int:book_id>", methods=["GET", "POST"])
+@admin_required
+def edit_book_pdf(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    if request.method == "POST":
+        # TEXT FIELDS
+        book.title = request.form["title"]
+        book.author = request.form["author"]
+        book.description = request.form.get("description", "")
+
+        # COVER IMAGE UPDATE (NEW)
+        if request.files.get("cover") and request.files["cover"].filename:
+            cover = cloudinary.uploader.upload(request.files["cover"])
+            book.cover_url = cover["secure_url"]
+
+        # PDF UPDATE (OPTIONAL)
+        if request.files.get("pdf") and request.files["pdf"].filename:
+            pdf = cloudinary.uploader.upload(
+                request.files["pdf"],
+                resource_type="raw"
+            )
+            book.pdf_url = pdf["secure_url"]
+
+        db.session.commit()
+        flash("Book, cover & PDF updated successfully", "success")
+        return redirect(url_for("admin_dashboard"))
+
+    return render_template("edit_book.html", book=book)
+
 # ================== API ROUTES ==================
 @app.route("/api/books")
 def api_books():

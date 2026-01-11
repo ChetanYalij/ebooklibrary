@@ -1,55 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Book</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Book & PDF</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="bg-base-100 p-4 md:p-6">
 
-<div class="max-w-xl mx-auto bg-base-200 p-4 md:p-6 rounded-lg shadow">
+<div class="max-w-xl mx-auto bg-base-200 p-6 rounded-lg shadow">
 
-    <h1 class="text-xl md:text-2xl font-bold mb-4">
-        ✏️ Edit Book
-    </h1>
+  <h1 class="text-xl md:text-2xl font-bold mb-4">
+    ✏️ Edit Book, Cover & PDF
+  </h1>
 
-    <form method="POST" class="space-y-4">
+  <form method="POST"
+        enctype="multipart/form-data"
+        class="space-y-4">
 
-        <input type="text" name="title"
-               value="{{ book.title }}"
-               class="input input-bordered w-full text-sm md:text-base"
-               required>
+    <!-- TITLE -->
+    <input type="text"
+           name="title"
+           value="{{ book.title }}"
+           class="input input-bordered w-full"
+           required>
 
-        <input type="text" name="author"
-               value="{{ book.author }}"
-               class="input input-bordered w-full text-sm md:text-base"
-               required>
+    <!-- AUTHOR -->
+    <input type="text"
+           name="author"
+           value="{{ book.author }}"
+           class="input input-bordered w-full"
+           required>
 
-        <textarea name="description"
-                  class="textarea textarea-bordered w-full text-sm md:text-base"
-                  rows="4">{{ book.description }}</textarea>
+    <!-- DESCRIPTION -->
+    <textarea name="description"
+              rows="4"
+              class="textarea textarea-bordered w-full">{{ book.description }}</textarea>
 
-        <input type="text" name="category"
-               value="{{ book.category }}"
-               class="input input-bordered w-full text-sm md:text-base">
+    <!-- COVER IMAGE (NEW) -->
+    <input type="file"
+           name="cover"
+           accept="image/*"
+           class="file-input file-input-bordered w-full">
 
-        <div class="flex flex-col sm:flex-row gap-3 pt-2">
+    <p class="text-xs opacity-60">
+      (If you don't want the cover to change, don't select the image.)
+    </p>
 
-            <button class="btn btn-primary w-full sm:w-auto">
-                Save
-            </button>
+    <!-- PDF FILE -->
+    <input type="file"
+           name="pdf"
+           accept="application/pdf"
+           class="file-input file-input-bordered w-full">
 
-            <a href="{{ url_for('admin_dashboard') }}"
-               class="btn btn-ghost w-full sm:w-auto">
-                Cancel
-            </a>
+    <p class="text-xs opacity-60">
+      (If you don't want to change the PDF, don't select the file)
+    </p>
 
-        </div>
+    <!-- BUTTONS -->
+    <div class="flex gap-3 pt-2">
+      <button class="btn btn-primary">
+        Save Changes
+      </button>
 
-    </form>
+      <a href="{{ url_for('admin_dashboard') }}"
+         class="btn btn-ghost">
+        Cancel
+      </a>
+    </div>
+
+  </form>
+
 </div>
 
 </body>
