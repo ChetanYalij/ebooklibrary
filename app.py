@@ -161,7 +161,7 @@ def search():
         query=query
     )
 
-# ================== READ (NO DOWNLOAD) ==================
+# ================== READ ==================
 @app.route("/read/<int:book_id>")
 @login_required
 def read_book(book_id):
