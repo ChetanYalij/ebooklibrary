@@ -2,35 +2,99 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ category }} Books</title>
+    <title>
+        {% if category %}
+            {{ category }} Books
+        {% else %}
+            Categories
+        {% endif %}
+    </title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="bg-gray-100 min-h-screen">
 
-<nav class="bg-indigo-600 text-white px-6 py-4">
-    <div class="flex justify-between items-center">
-        <h1 class="text-xl font-bold">{{ category }} Books</h1>
-        <a href="/categories" class="hover:underline">← Back</a>
+<!-- NAVBAR -->
+<nav class="bg-indigo-600 text-white px-6 py-4 shadow">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+        <h1 class="text-xl font-bold">
+            {% if category %}
+                {{ category }} Books
+            {% else %}
+                Book Categories
+            {% endif %}
+        </h1>
+
+        {% if category %}
+            <a href="{{ url_for('categories') }}" class="hover:underline">
+                ← Back to Categories
+            </a>
+        {% endif %}
     </div>
 </nav>
 
+<!-- CONTENT -->
 <div class="max-w-6xl mx-auto px-6 py-10">
-    {% if books %}
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-        {% for book in books %}
-        <div class="bg-white rounded-xl shadow p-4">
-            {% if book.cover_url %}
-            <img src="{{ book.cover_url }}" class="h-48 w-full object-cover rounded">
-            {% endif %}
-            <h3 class="font-bold mt-2">{{ book.title }}</h3>
-            <p class="text-sm opacity-70">{{ book.author }}</p>
+
+    <!-- ================= CATEGORY LIST ================= -->
+    {% if not category %}
+        {% if categories %}
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+
+            {% for cat in categories %}
+            <a href="{{ url_for('category_books', category_name=cat) }}"
+               class="bg-white rounded-lg shadow p-4 text-center font-semibold
+                      hover:bg-indigo-600 hover:text-white transition">
+
+                {{ cat }}
+            </a>
+            {% endfor %}
+
         </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <p class="text-center text-gray-500">No books in this category.</p>
+        {% else %}
+            <p class="text-center text-gray-500">No categories found.</p>
+        {% endif %}
     {% endif %}
+
+    <!-- ================= BOOKS LIST ================= -->
+    {% if category %}
+        {% if books %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+
+            {% for book in books %}
+            <a href="{{ url_for('book_detail', book_id=book.id) }}"
+               class="bg-white rounded-xl shadow hover:shadow-lg transition p-4 block">
+
+                {% if book.cover_url %}
+                    <img src="{{ book.cover_url }}"
+                         class="h-48 w-full object-cover rounded-lg">
+                {% else %}
+                    <div class="h-48 flex items-center justify-center bg-gray-200 rounded-lg text-gray-500">
+                        No Cover
+                    </div>
+                {% endif %}
+
+                <h3 class="font-bold mt-3 text-gray-800 line-clamp-2">
+                    {{ book.title }}
+                </h3>
+
+                <p class="text-sm text-gray-500 mt-1">
+                    {{ book.author }}
+                </p>
+
+            </a>
+            {% endfor %}
+
+        </div>
+        {% else %}
+            <p class="text-center text-gray-500 text-lg">
+                No books found in this category.
+            </p>
+        {% endif %}
+    {% endif %}
+
 </div>
 
 </body>

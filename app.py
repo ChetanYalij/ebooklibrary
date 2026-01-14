@@ -5,7 +5,7 @@ from flask import (
     flash, redirect, url_for, jsonify, abort
 )
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import func
+from sqlalchemy import func, text
 from werkzeug.security import generate_password_hash, check_password_hash
 import cloudinary
 import cloudinary.uploader
@@ -22,15 +22,23 @@ app.secret_key = os.getenv("SECRET_KEY", "change-this")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 
-# ================== DATABASE ==================
+# ================== DATABASE (NEON READY) ==================
 DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+
+if not DATABASE_URL:
+    raise RuntimeError("❌ DATABASE_URL not set in .env")
+
+# Fix old postgres://
+if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-if DATABASE_URL and "sslmode" not in DATABASE_URL:
+
+# Force SSL (Neon requirement)
+if "sslmode" not in DATABASE_URL:
     DATABASE_URL += "?sslmode=require"
 
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
 db = SQLAlchemy(app)
 
 # ================== CLOUDINARY ==================
@@ -84,7 +92,11 @@ def admin_required(f):
 
 # ================== INIT DB + ADMIN ==================
 with app.app_context():
+    # 🔎 Neon DB connection test
+    db.session.execute(text("SELECT 1"))
+
     db.create_all()
+
     if ADMIN_EMAIL and ADMIN_PASSWORD:
         admin = User.query.filter_by(email=ADMIN_EMAIL).first()
         if not admin:
@@ -127,15 +139,11 @@ def categories():
         .all()
     )
     categories = [c[0] for c in categories]
-
     return render_template("categories.html", categories=categories)
 
 @app.route("/category/<path:category_name>")
 def category_books(category_name):
-    print("CATEGORY CLICKED:", category_name)
-
-    books = Book.query.filter_by(category=category_name).all() 
-
+    books = Book.query.filter_by(category=category_name).all()
     return render_template(
         "categories.html",
         books=books,
@@ -146,7 +154,6 @@ def category_books(category_name):
 @app.route("/search")
 def search():
     query = request.args.get("query", "").strip()
-
     if not query:
         return redirect(url_for("index"))
 
