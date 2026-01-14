@@ -17,8 +17,11 @@
 <body class="bg-gray-100 min-h-screen">
 
 <!-- NAVBAR -->
+<!-- NAVBAR -->
 <nav class="bg-indigo-600 text-white px-6 py-4 shadow">
     <div class="max-w-6xl mx-auto flex justify-between items-center">
+
+        <!-- Left: Title -->
         <h1 class="text-xl font-bold">
             {% if category %}
                 {{ category }} Books
@@ -27,11 +30,24 @@
             {% endif %}
         </h1>
 
-        {% if category %}
-            <a href="{{ url_for('categories') }}" class="hover:underline">
-                ← Back to Categories
+        <!-- Right: Buttons -->
+        <div class="flex items-center gap-4 text-sm font-medium">
+
+            <!-- Home Button -->
+            <a href="{{ url_for('index') }}"
+               class="bg-white text-indigo-600 px-4 py-1.5 rounded hover:bg-gray-100 transition">
+                🏠 Home
             </a>
-        {% endif %}
+
+            {% if category %}
+                <a href="{{ url_for('categories') }}"
+                   class="hover:underline">
+                    ← Back to Categories
+                </a>
+            {% endif %}
+
+        </div>
+
     </div>
 </nav>
 
