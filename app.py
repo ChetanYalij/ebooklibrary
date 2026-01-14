@@ -116,39 +116,62 @@ def book_detail(book_id):
     book = Book.query.get_or_404(book_id)
     return render_template("book_detail.html", book=book)
 
-@app.route("/search")
-def search():
-    query = request.args.get("query")
-    category = request.args.get("category")
+# ================== CATEGORIES ==================
+@app.route("/categories")
+def categories():
+    categories = (
+        db.session.query(Book.category)
+        .filter(Book.category.isnot(None))
+        .distinct()
+        .order_by(Book.category)
+        .all()
+    )
+    categories = [c[0] for c in categories]
 
-    if category:
-        books = Book.query.filter_by(category=category).all()
-    else:
-        books = Book.query.filter(
-            Book.title.ilike(f"%{query}%")
-        ).all()
+    return render_template("categories.html", categories=categories)
+
+@app.route("/category/<path:category_name>")
+def category_books(category_name):
+    print("CATEGORY CLICKED:", category_name)
+
+    books = Book.query.filter_by(category=category_name).all() 
 
     return render_template(
-        "search_page.html",
+        "categories.html",
         books=books,
-        query=query or category
+        category=category_name
     )
 
-# ================== READ & DOWNLOAD ==================
+# ================== SEARCH ==================
+@app.route("/search")
+def search():
+    query = request.args.get("query", "").strip()
+
+    if not query:
+        return redirect(url_for("index"))
+
+    books = Book.query.filter(
+        Book.title.ilike(f"%{query}%") |
+        Book.author.ilike(f"%{query}%")
+    ).all()
+
+    return render_template(
+        "search_results.html",
+        books=books,
+        query=query
+    )
+
+# ================== READ (NO DOWNLOAD) ==================
 @app.route("/read/<int:book_id>")
 @login_required
 def read_book(book_id):
     book = Book.query.get_or_404(book_id)
-    google_viewer = "https://docs.google.com/gview?embedded=true&url=" + book.pdf_url
+    google_viewer = (
+        "https://docs.google.com/gview?embedded=true&url=" + book.pdf_url
+    )
     return redirect(google_viewer)
 
-@app.route("/download/<int:book_id>")
-@login_required
-def download_book(book_id):
-    book = Book.query.get_or_404(book_id)
-    return redirect(book.pdf_url)
-
-# ================== AUTH ROUTES ==================
+# ================== AUTH ==================
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -178,13 +201,12 @@ def login():
 
         if user and user.check_password(password):
             session["user_id"] = user.id
-            session["user_name"] = user.name      # ✅ FIXED
+            session["user_name"] = user.name
             session["is_admin"] = user.is_admin
             flash("Login successful!", "success")
             return redirect(url_for("index"))
-        else:
-            flash("Invalid email or password.", "error")
-            return redirect(url_for("login"))
+
+        flash("Invalid email or password.", "error")
 
     return render_template("login.html")
 
@@ -194,16 +216,18 @@ def logout():
     flash("Logged out successfully", "success")
     return redirect(url_for("index"))
 
-# ================== ADMIN ROUTES ==================
+# ================== ADMIN ==================
 @app.route("/admin")
 @admin_required
 def admin_dashboard():
     total_books = Book.query.count()
     total_authors = db.session.query(Book.author).distinct().count()
+
     category_stats = db.session.query(
         func.coalesce(Book.category, "Uncategorized"),
         func.count(Book.id)
     ).group_by(func.coalesce(Book.category, "Uncategorized")).all()
+
     recent_books = Book.query.order_by(Book.id.desc()).limit(10).all()
 
     return render_template(
@@ -260,17 +284,14 @@ def edit_book_pdf(book_id):
     book = Book.query.get_or_404(book_id)
 
     if request.method == "POST":
-        # TEXT FIELDS
         book.title = request.form["title"]
         book.author = request.form["author"]
         book.description = request.form.get("description", "")
 
-        # COVER IMAGE UPDATE (NEW)
         if request.files.get("cover") and request.files["cover"].filename:
             cover = cloudinary.uploader.upload(request.files["cover"])
             book.cover_url = cover["secure_url"]
 
-        # PDF UPDATE (OPTIONAL)
         if request.files.get("pdf") and request.files["pdf"].filename:
             pdf = cloudinary.uploader.upload(
                 request.files["pdf"],
@@ -279,12 +300,12 @@ def edit_book_pdf(book_id):
             book.pdf_url = pdf["secure_url"]
 
         db.session.commit()
-        flash("Book, cover & PDF updated successfully", "success")
+        flash("Book updated successfully", "success")
         return redirect(url_for("admin_dashboard"))
 
     return render_template("edit_book.html", book=book)
 
-# ================== API ROUTES ==================
+# ================== API ==================
 @app.route("/api/books")
 def api_books():
     books = Book.query.all()
@@ -313,7 +334,7 @@ def api_search():
         for b in books
     ])
 
-# ================== ERROR HANDLERS ==================
+# ================== ERRORS ==================
 @app.errorhandler(403)
 def forbidden(e):
     return "<h1>403 - Access Denied</h1>", 403
