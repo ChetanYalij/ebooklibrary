@@ -139,37 +139,37 @@
             <h2 class="text-2xl font-bold text-center mb-6">📂📂 Categories</h2>
 
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                <a href="{{ url_for('search') }}?category=Programming"
+                <a href="{{ url_for('category_books', category_name='Programming') }}"
                    class="btn btn-outline btn-primary h-20 flex flex-col justify-center">
                     💻 Programming
                 </a>
 
-                <a href="{{ url_for('search') }}?category=Education"
+                <a href="{{ url_for('category_books', category_name='Education') }}"
                    class="btn btn-outline btn-secondary h-20 flex flex-col justify-center">
                     🎓 Education
                 </a>
 
-                <a href="{{ url_for('search') }}?category=Novel"
+                <a href="{{ url_for('category_books', category_name='Novel') }}"
                    class="btn btn-outline btn-accent h-20 flex flex-col justify-center">
                     📖 Novels
                 </a>
 
-                <a href="{{ url_for('search') }}?category=Science"
+                <a href="{{ url_for('category_books', category_name='Science') }}"
                    class="btn btn-outline h-20 flex flex-col justify-center">
                     🔬 Science
                 </a>
 
-                <a href="{{ url_for('search') }}?category=Technology"
+                <a href="{{ url_for('category_books', category_name='Technology') }}"
                    class="btn btn-outline btn-info h-20 flex flex-col justify-center">
                     ⚙️ Technology
                 </a>
 
-                <a href="{{ url_for('search') }}?category=Biography"
+                <a href="{{ url_for('category_books', category_name='Biography') }}"
                    class="btn btn-outline btn-success h-20 flex flex-col justify-center">
                     👤 Biography
                 </a>
 
-                <a href="{{ url_for('search') }}?category=Marathi"
+                <a href="{{ url_for('category_books', category_name='Marathi') }}"
                    class="btn btn-outline btn-warning h-20 flex flex-col justify-center">
                     🇮🇳 Marathi Books
                 </a>
