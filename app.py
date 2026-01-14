@@ -6,6 +6,7 @@ from flask import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, text
+from sqlalchemy.exc import OperationalError
 from werkzeug.security import generate_password_hash, check_password_hash
 import cloudinary
 import cloudinary.uploader
@@ -22,22 +23,25 @@ app.secret_key = os.getenv("SECRET_KEY", "change-this")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 
-# ================== DATABASE (NEON READY) ==================
+# ================== DATABASE (RENDER / NEON SAFE) ==================
 DATABASE_URL = os.getenv("DATABASE_URL")
-
 if not DATABASE_URL:
-    raise RuntimeError("❌ DATABASE_URL not set in .env")
+    raise RuntimeError("❌ DATABASE_URL not set")
 
-# Fix old postgres://
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Force SSL (Neon requirement)
 if "sslmode" not in DATABASE_URL:
     DATABASE_URL += "?sslmode=require"
 
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# 🔥 VERY IMPORTANT (SSL disconnect fix)
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+}
 
 db = SQLAlchemy(app)
 
@@ -82,9 +86,13 @@ def admin_required(f):
     @wraps(f)
     def wrap(*args, **kwargs):
         if "user_id" not in session:
-            flash("Please login first", "error")
             return redirect(url_for("login"))
-        user = User.query.get(session["user_id"])
+        try:
+            user = User.query.get(session["user_id"])
+        except OperationalError:
+            db.session.rollback()
+            return redirect(url_for("login"))
+
         if not user or not user.is_admin:
             abort(403)
         return f(*args, **kwargs)
@@ -92,9 +100,7 @@ def admin_required(f):
 
 # ================== INIT DB + ADMIN ==================
 with app.app_context():
-    # 🔎 Neon DB connection test
     db.session.execute(text("SELECT 1"))
-
     db.create_all()
 
     if ADMIN_EMAIL and ADMIN_PASSWORD:
