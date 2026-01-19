@@ -37,7 +37,6 @@ if "sslmode" not in DATABASE_URL:
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# 🔥 VERY IMPORTANT (SSL disconnect fix)
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
     "pool_recycle": 300,
@@ -68,7 +67,7 @@ class Book(db.Model):
     title = db.Column(db.String(200), nullable=False)
     author = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
-    category = db.Column(db.String(50))
+    category = db.Column(db.String(100))
     cover_url = db.Column(db.String(500))
     pdf_url = db.Column(db.String(500))
 
@@ -134,22 +133,13 @@ def book_detail(book_id):
     book = Book.query.get_or_404(book_id)
     return render_template("book_detail.html", book=book)
 
-# ================== CATEGORIES ==================
-@app.route("/categories")
-def categories():
-    categories = (
-        db.session.query(Book.category)
-        .filter(Book.category.isnot(None))
-        .distinct()
-        .order_by(Book.category)
-        .all()
-    )
-    categories = [c[0] for c in categories]
-    return render_template("categories.html", categories=categories)
-
-@app.route("/category/<path:category_name>")
+# ================== CATEGORY ==================
+@app.route("/category/<category_name>")
 def category_books(category_name):
-    books = Book.query.filter_by(category=category_name).all()
+    books = Book.query.filter(
+        Book.category.ilike(f"%{category_name}%")
+    ).all()
+
     return render_template(
         "categories.html",
         books=books,
