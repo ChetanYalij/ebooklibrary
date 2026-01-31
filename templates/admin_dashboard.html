@@ -62,6 +62,13 @@
 
             </div>
 
+            <!-- ================= CATEGORY EDIT BUTTON ================= -->
+            <div class="flex justify-end mb-4">
+                <a href="{{ url_for('admin_all_books') }}" class="btn btn-sm btn-warning">
+                    ✏️ Edit All Books
+                </a>
+            </div>
+
             <!-- ================= CATEGORY STATS ================= -->
             <div class="card bg-base-200 shadow mb-10">
                 <div class="card-body">
@@ -106,10 +113,35 @@
                                     </div>
                                 </div>
 
-                                <a href="{{ url_for('edit_book_pdf', book_id=book.id) }}"
-                                   class="btn btn-xs btn-info w-full md:w-auto">
-                                    📄 Edit PDF
-                                </a>
+                                <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+
+                                    <div>
+                                        <strong class="text-sm md:text-lg">
+                                            {{ book.title }}
+                                        </strong>
+                                        <div class="text-xs opacity-70">
+                                            by {{ book.author }}
+                                        </div>
+                                    </div>
+
+                                    <!-- Edit PDF -->
+                                    <a href="{{ url_for('edit_book_pdf', book_id=book.id) }}"
+                                       class="btn btn-xs btn-info w-full md:w-auto">
+                                        📄 Edit PDF
+                                    </a>
+
+                                    <!-- Delete Book -->
+                                    <form method="POST"
+                                          action="{{ url_for('delete_book', book_id=book.id) }}"
+                                          onsubmit="return confirm('Are you sure you want to delete this book?');">
+                                        <button type="submit"
+                                                class="btn btn-xs btn-error w-full md:w-auto">
+                                            🗑 Delete
+                                        </button>
+                                    </form>
+
+                                </div>
+
 
                                 <form method="POST"
                                       action="{{ url_for('delete_book', book_id=book.id) }}"

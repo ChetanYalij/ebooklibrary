@@ -281,7 +281,8 @@ def delete_book(book_id):
     flash("Book deleted successfully", "success")
     return redirect(url_for("admin_dashboard"))
 
-@app.route("/admin/edit-pdf/<int:book_id>", methods=["GET", "POST"])
+# ================== EDIT BOOK DETAILS PAGE ==================
+@app.route("/admin/edit-book/<int:book_id>", methods=["GET", "POST"])
 @admin_required
 def edit_book_pdf(book_id):
     book = Book.query.get_or_404(book_id)
@@ -289,24 +290,13 @@ def edit_book_pdf(book_id):
     if request.method == "POST":
         book.title = request.form["title"]
         book.author = request.form["author"]
-        book.description = request.form.get("description", "")
-
-        if request.files.get("cover") and request.files["cover"].filename:
-            cover = cloudinary.uploader.upload(request.files["cover"])
-            book.cover_url = cover["secure_url"]
-
-        if request.files.get("pdf") and request.files["pdf"].filename:
-            pdf = cloudinary.uploader.upload(
-                request.files["pdf"],
-                resource_type="raw"
-            )
-            book.pdf_url = pdf["secure_url"]
+        book.category = request.form["category"]
 
         db.session.commit()
-        flash("Book updated successfully", "success")
+        flash("Book updated", "success")
         return redirect(url_for("admin_dashboard"))
 
-    return render_template("edit_book.html", book=book)
+    return render_template("edit_book_details.html", book=book)
 
 # ================== API ==================
 @app.route("/api/books")
@@ -336,6 +326,28 @@ def api_search():
         {"id": b.id, "title": b.title, "author": b.author}
         for b in books
     ])
+
+# ================== ADMIN ALL BOOKS EDIT PAGE ==================
+
+@app.route("/admin/all-books")
+@admin_required
+def admin_all_books():
+    books = Book.query.order_by(Book.id.desc()).all()
+    return render_template("admin_all_books.html", books=books)
+
+
+@app.route("/admin/update-book/<int:book_id>", methods=["POST"])
+@admin_required
+def update_book(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    book.title = request.form["title"]
+    book.author = request.form["author"]
+    book.category = request.form["category"]
+
+    db.session.commit()
+    flash("Book updated successfully", "success")
+    return redirect(url_for("admin_all_books.html"))
 
 # ================== ERRORS ==================
 @app.errorhandler(403)
