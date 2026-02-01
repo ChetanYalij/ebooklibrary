@@ -32,6 +32,12 @@
                     Logout
                 </a>
 
+                <a href="{{ url_for('admin_all_books') }}" 
+                    class="btn btn-sm btn-warning btn-error w-full md:w-auto">
+                    ✏️ Edit All Books
+                </a>
+
+
                 <span class="badge badge-primary self-center md:self-auto">
                     ADMIN
                 </span>
@@ -60,13 +66,6 @@
                     <div class="stat-value text-accent">{{ category_stats|length }}</div>
                 </div>
 
-            </div>
-
-            <!-- ================= CATEGORY EDIT BUTTON ================= -->
-            <div class="flex justify-end mb-4">
-                <a href="{{ url_for('admin_all_books') }}" class="btn btn-sm btn-warning">
-                    ✏️ Edit All Books
-                </a>
             </div>
 
             <!-- ================= CATEGORY STATS ================= -->

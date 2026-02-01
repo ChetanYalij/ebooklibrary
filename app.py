@@ -169,10 +169,7 @@ def search():
 @login_required
 def read_book(book_id):
     book = Book.query.get_or_404(book_id)
-    google_viewer = (
-        "https://docs.google.com/gview?embedded=true&url=" + book.pdf_url
-    )
-    return redirect(google_viewer)
+    return render_template("book_detail.html", book=book)
 
 # ================== AUTH ==================
 @app.route("/register", methods=["GET", "POST"])

@@ -168,11 +168,6 @@
                    class="btn btn-outline btn-success h-20 flex flex-col justify-center">
                     👤 Biography
                 </a>
-
-                <a href="{{ url_for('category_books', category_name='Marathi') }}"
-                   class="btn btn-outline btn-warning h-20 flex flex-col justify-center">
-                    🇮🇳 Marathi Books
-                </a>
             </div>
         </div>
 
@@ -194,7 +189,7 @@
                         <p class="text-sm opacity-70">{{ book.author }}</p>
 
                         <div class="card-actions justify-end mt-4">
-                            <a href="{{ url_for('book_detail', book_id=book.id) }}"
+                            <a href="{{ url_for('read_book', book_id=book.id) }}"
                                class="btn btn-primary btn-sm">
                                 View Book
                             </a>

@@ -79,10 +79,10 @@
 
                         {% if book.pdf_url %}
                         <a href="https://docs.google.com/gview?embedded=true&url={{ book.pdf_url }}"
-                           target="_blank"
                            class="btn btn-success w-full sm:w-auto">
                             📖 Read Online
                         </a>
+
 
                         {% else %}
                         <span class="text-error">PDF not available</span>
@@ -114,18 +114,24 @@
                     </form>
                 </div>
 
-                <iframe
-                    src="{{ book.pdf_url }}"
-                    class="w-full h-full border-none">
-                </iframe>
+                {% if read_mode %}
+                <div class="mt-6 w-full">
+                    <iframe
+                        src="{{ book.pdf_url }}"
+                        class="w-full h-[90vh] border rounded-lg"
+                        loading="lazy">
+                    </iframe>
+                </div>
+                {% endif %}
+
 
             </div>
         </dialog>
 
         <script>
-        function openReader() {
-            document.getElementById("pdfModal").showModal();
-        }
+function openReader() {
+    document.getElementById("pdfModal").showModal();
+}
         </script>
 
     </body>
