@@ -244,10 +244,11 @@ def upload_book():
     if request.method == "POST":
         cover_url = None
 
-        cover_file = request.files.get("cover")
-        if cover_file and cover_file.filename != "":
-        cover = cloudinary.uploader.upload(cover_file)
-        cover_url = cover["secure_url"]
+cover_file = request.files.get("cover")
+if cover_file and cover_file.filename != "":
+    cover = cloudinary.uploader.upload(cover_file)
+    cover_url = cover["secure_url"]
+
 
         pdf = cloudinary.uploader.upload(
             request.files["pdf"],
