@@ -344,7 +344,7 @@ def update_book(book_id):
 
     db.session.commit()
     flash("Book updated successfully", "success")
-    return redirect(url_for("admin_all_books.html"))
+    return redirect(url_for("admin_all_books"))
 
 # ================== ERRORS ==================
 @app.errorhandler(403)
