@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>Admin • Advanced Book Editor</title>
+        <title>Admin • Book Editor</title>
 
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet"/>
@@ -71,11 +71,6 @@
 
                             <div class="flex gap-2 items-center">
                                 <span class="badge badge-primary">{{ book.category }}</span>
-
-                                <a href="{{ url_for('edit_book_pdf', book_id=book.id) }}"
-                                   class="btn btn-xs btn-info">
-                                    📄 PDF
-                                </a>
 
                                 <label for="adv_{{ book.id }}" class="btn btn-xs btn-outline">
                                     ⚙️ Edit Details

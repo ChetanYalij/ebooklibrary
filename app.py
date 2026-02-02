@@ -238,17 +238,17 @@ def admin_dashboard():
         recent_books=recent_books
     )
 
+# ================== ADMIN UPLOAD (FIXED ONLY HERE) ==================
 @app.route("/admin/upload", methods=["GET", "POST"])
 @admin_required
 def upload_book():
     if request.method == "POST":
         cover_url = None
 
-cover_file = request.files.get("cover")
-if cover_file and cover_file.filename != "":
-    cover = cloudinary.uploader.upload(cover_file)
-    cover_url = cover["secure_url"]
-
+        cover_file = request.files.get("cover")
+        if cover_file and cover_file.filename != "":
+            cover = cloudinary.uploader.upload(cover_file)
+            cover_url = cover["secure_url"]
 
         pdf = cloudinary.uploader.upload(
             request.files["pdf"],
@@ -327,13 +327,11 @@ def api_search():
     ])
 
 # ================== ADMIN ALL BOOKS EDIT PAGE ==================
-
 @app.route("/admin/all-books")
 @admin_required
 def admin_all_books():
     books = Book.query.order_by(Book.id.desc()).all()
     return render_template("admin_all_books.html", books=books)
-
 
 @app.route("/admin/update-book/<int:book_id>", methods=["POST"])
 @admin_required
