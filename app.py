@@ -8,6 +8,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, text
 from sqlalchemy.exc import OperationalError
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename   # 🔥 ADDED
 import cloudinary
 import cloudinary.uploader
 from dotenv import load_dotenv
@@ -36,7 +37,6 @@ if "sslmode" not in DATABASE_URL:
 
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
     "pool_recycle": 300,
@@ -238,39 +238,38 @@ def admin_dashboard():
         recent_books=recent_books
     )
 
-# ================== ADMIN UPLOAD (FIXED ONLY HERE) ==================
-@app.route("/admin/upload", methods=["GET", "POST"])
+# ================== ADMIN ALL BOOKS EDIT PAGE ==================
+@app.route("/admin/all-books")
 @admin_required
-def upload_book():
-    if request.method == "POST":
-        cover_url = None
+def admin_all_books():
+    books = Book.query.order_by(Book.id.desc()).all()
+    return render_template("admin_all_books.html", books=books)
 
-        cover_file = request.files.get("cover")
-        if cover_file and cover_file.filename != "":
-            cover = cloudinary.uploader.upload(cover_file)
-            cover_url = cover["secure_url"]
+# ================== 🔥 UPDATED BOOK UPDATE (COVER FIX) ==================
+@app.route("/admin/update-book/<int:book_id>", methods=["POST"])
+@admin_required
+def update_book(book_id):
+    book = Book.query.get_or_404(book_id)
 
-        pdf = cloudinary.uploader.upload(
-            request.files["pdf"],
-            resource_type="raw"
+    book.title = request.form["title"]
+    book.author = request.form["author"]
+    book.category = request.form["category"]
+    book.description = request.form.get("description", "")
+
+    # 🔥 COVER IMAGE UPDATE (CLOUDINARY)
+    cover_file = request.files.get("cover_file")
+    if cover_file and cover_file.filename != "":
+        upload = cloudinary.uploader.upload(
+            cover_file,
+            folder="book_covers"
         )
+        book.cover_url = upload["secure_url"]
 
-        book = Book(
-            title=request.form["title"],
-            author=request.form["author"],
-            description=request.form.get("description", ""),
-            category=request.form.get("category", "General"),
-            cover_url=cover_url,
-            pdf_url=pdf["secure_url"]
-        )
-        db.session.add(book)
-        db.session.commit()
+    db.session.commit()
+    flash("Book updated successfully", "success")
+    return redirect(url_for("admin_all_books"))
 
-        flash("Book uploaded successfully", "success")
-        return redirect(url_for("admin_dashboard"))
-
-    return render_template("upload.html")
-
+# ================== DELETE ==================
 @app.route("/admin/delete/<int:book_id>", methods=["POST"])
 @admin_required
 def delete_book(book_id):
@@ -279,23 +278,6 @@ def delete_book(book_id):
     db.session.commit()
     flash("Book deleted successfully", "success")
     return redirect(url_for("admin_dashboard"))
-
-# ================== EDIT BOOK DETAILS PAGE ==================
-@app.route("/admin/edit-book/<int:book_id>", methods=["GET", "POST"])
-@admin_required
-def edit_book_pdf(book_id):
-    book = Book.query.get_or_404(book_id)
-
-    if request.method == "POST":
-        book.title = request.form["title"]
-        book.author = request.form["author"]
-        book.category = request.form["category"]
-
-        db.session.commit()
-        flash("Book updated", "success")
-        return redirect(url_for("admin_dashboard"))
-
-    return render_template("edit_book_details.html", book=book)
 
 # ================== API ==================
 @app.route("/api/books")
@@ -325,26 +307,6 @@ def api_search():
         {"id": b.id, "title": b.title, "author": b.author}
         for b in books
     ])
-
-# ================== ADMIN ALL BOOKS EDIT PAGE ==================
-@app.route("/admin/all-books")
-@admin_required
-def admin_all_books():
-    books = Book.query.order_by(Book.id.desc()).all()
-    return render_template("admin_all_books.html", books=books)
-
-@app.route("/admin/update-book/<int:book_id>", methods=["POST"])
-@admin_required
-def update_book(book_id):
-    book = Book.query.get_or_404(book_id)
-
-    book.title = request.form["title"]
-    book.author = request.form["author"]
-    book.category = request.form["category"]
-
-    db.session.commit()
-    flash("Book updated successfully", "success")
-    return redirect(url_for("admin_all_books"))
 
 # ================== ERRORS ==================
 @app.errorhandler(403)
