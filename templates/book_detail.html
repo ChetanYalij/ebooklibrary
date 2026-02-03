@@ -47,12 +47,10 @@
                 <div>
                     {% if book.cover_url %}
                     <img src="{{ book.cover_url }}"
-                         alt="Book Cover"
-                         class="rounded-xl shadow-lg w-full max-h-[320px] md:max-h-[450px] object-cover">
+                         alt="{{ book.title }}"
+                         style="max-width:200px;border-radius:8px;">
                     {% else %}
-                    <div class="h-[320px] md:h-[450px] flex items-center justify-center bg-base-200 rounded-xl">
-                        <span class="opacity-60">No Cover Image</span>
-                    </div>
+                    <p>No cover available</p>
                     {% endif %}
                 </div>
 
