@@ -238,7 +238,7 @@ def update_book(book_id):
         book.cover_url = "/" + path
 
     db.session.commit()
-    return redirect(url_for("admin_all_books"))
+    return redirect(url_for("admin_dashboard"))
 
 # ================== ADMIN ==================
 @app.route("/admin")
