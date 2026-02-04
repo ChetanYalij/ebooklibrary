@@ -24,7 +24,7 @@ app.secret_key = os.getenv("SECRET_KEY", "change-this")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 
-# ================== DATABASE (RENDER / NEON SAFE) ==================
+# ================== DATABASE==================
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("❌ DATABASE_URL not set")
@@ -35,8 +35,6 @@ if DATABASE_URL.startswith("postgres://"):
 if "sslmode" not in DATABASE_URL:
     DATABASE_URL += "?sslmode=require"
 
-UPLOAD_FOLDER = "static/uploads"
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -219,27 +217,6 @@ def logout():
     flash("Logged out successfully", "success")
     return redirect(url_for("index"))
 
-@app.route("/admin/update-book/<int:book_id>", methods=["POST"])
-def update_book(book_id):
-    book = Book.query.get_or_404(book_id)
-
-    book.title = request.form["title"]
-    book.author = request.form["author"]
-    book.description = request.form["description"]
-    book.category = request.form["category"]
-
-    file = request.files.get("cover_file")
-
-    if file and file.filename != "":
-        filename = secure_filename(file.filename)
-        path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-        file.save(path)
-
-        book.cover_url = "/" + path
-
-    db.session.commit()
-    return redirect(url_for("admin_dashboard"))
-
 # ================== ADMIN ==================
 @app.route("/admin")
 @admin_required
@@ -262,7 +239,15 @@ def admin_dashboard():
         recent_books=recent_books
     )
 
-# ================== ADMIN UPLOAD (FIXED ONLY HERE) ==================
+# ================== >>> ADDED ROUTE <<< ==================
+@app.route("/admin/all-books")
+@admin_required
+def admin_all_books():
+    books = Book.query.order_by(Book.id.desc()).all()
+    return render_template("admin_all_books.html", books=books)
+# ========================================================
+
+# ================== ADMIN UPLOAD ==================
 @app.route("/admin/upload", methods=["GET", "POST"])
 @admin_required
 def upload_book():
@@ -304,7 +289,7 @@ def delete_book(book_id):
     flash("Book deleted successfully", "success")
     return redirect(url_for("admin_dashboard"))
 
-# ================== EDIT BOOK DETAILS PAGE ==================
+# ================== EDIT ==================
 @app.route("/admin/edit-book/<int:book_id>", methods=["GET", "POST"])
 @admin_required
 def edit_book_pdf(book_id):
@@ -314,48 +299,22 @@ def edit_book_pdf(book_id):
         book.title = request.form["title"]
         book.author = request.form["author"]
         book.category = request.form["category"]
-
         db.session.commit()
         flash("Book updated", "success")
         return redirect(url_for("admin_dashboard"))
 
     return render_template("edit_book_details.html", book=book)
 
-# ================== API ==================
-@app.route("/api/books")
-def api_books():
-    books = Book.query.all()
-    return jsonify([
-        {
-            "id": b.id,
-            "title": b.title,
-            "author": b.author,
-            "category": b.category
-        } for b in books
-    ])
-
-@app.route("/api/search")
-def api_search():
-    q = request.args.get("q", "").strip()
-    if not q:
-        return jsonify([])
-
-    books = Book.query.filter(
-        Book.title.ilike(f"%{q}%") |
-        Book.author.ilike(f"%{q}%")
-    ).limit(8).all()
-
-    return jsonify([
-        {"id": b.id, "title": b.title, "author": b.author}
-        for b in books
-    ])
-
-# ================== ADMIN ALL BOOKS EDIT PAGE ==================
-@app.route("/admin/all-books")
+# ================== UPDATE ==================
+@app.route("/admin/update-book/<int:book_id>", methods=["POST"])
 @admin_required
-def admin_all_books():
-    books = Book.query.order_by(Book.id.desc()).all()
-    return render_template("admin_all_books.html", books=books)
+def update_book(book_id):
+    book = Book.query.get_or_404(book_id)
+    book.title = request.form["title"]
+    book.author = request.form["author"]
+    book.category = request.form.get("category", book.category)
+    db.session.commit()
+    return redirect(url_for("admin_all_books"))
 
 # ================== ERRORS ==================
 @app.errorhandler(403)
