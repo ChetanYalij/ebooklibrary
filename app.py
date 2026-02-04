@@ -245,7 +245,6 @@ def admin_dashboard():
 def admin_all_books():
     books = Book.query.order_by(Book.id.desc()).all()
     return render_template("admin_all_books.html", books=books)
-# ========================================================
 
 # ================== ADMIN UPLOAD ==================
 @app.route("/admin/upload", methods=["GET", "POST"])
@@ -310,10 +309,19 @@ def edit_book_pdf(book_id):
 @admin_required
 def update_book(book_id):
     book = Book.query.get_or_404(book_id)
+
     book.title = request.form["title"]
     book.author = request.form["author"]
+    book.description = request.form.get("description", "")
     book.category = request.form.get("category", book.category)
+
+    cover_file = request.files.get("cover_file")
+    if cover_file and cover_file.filename != "":
+        upload = cloudinary.uploader.upload(cover_file)
+        book.cover_url = upload["secure_url"]
+
     db.session.commit()
+    flash("Book updated successfully", "success")
     return redirect(url_for("admin_all_books"))
 
 # ================== ERRORS ==================

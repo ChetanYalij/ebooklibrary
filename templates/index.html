@@ -180,10 +180,11 @@
                 {% for book in books %}
                 <div class="card bg-base-100 shadow-xl">
                     {% if book.cover_url %}
-                    <figure>
-                        <img src="{{ book.cover_url }}" class="h-56 w-full object-cover"/>
-                    </figure>
+                    <img src="{{ book.cover_url }}" alt="Cover" style="height:200px;">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='no-cover.png') }}" alt="No Cover">
                     {% endif %}
+
                     <div class="card-body">
                         <h2 class="card-title text-lg">{{ book.title }}</h2>
                         <p class="text-sm opacity-70">{{ book.author }}</p>
