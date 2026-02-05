@@ -233,49 +233,56 @@
 
         <!-- ================= SEARCH SCRIPT ================= -->
         <script>
-            let debounceTimer;
+            const input = document.getElementById("liveSearch");
+            const results = document.getElementById("results");
+            const noResults = document.getElementById("no-results");
 
-            async function handleSearchInput() {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(async () => {
-                    const q = searchInput.value.trim();
-                    clearBtn.classList.toggle("hidden", !q);
+            let timer = null;
 
-                    if (q.length < 2) {
-                        suggestions.classList.add("hidden");
-                        return;
-                    }
+            input.addEventListener("input", () => {
+                clearTimeout(timer);
+                const q = input.value.trim();
 
-                    const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-                    const data = await res.json();
-                    suggestions.innerHTML = "";
+                if (q.length < 2) {
+                    results.innerHTML = "";
+                    noResults.style.display = "none";
+                    return;
+                }
 
-                    if (!data.length) {
-                        suggestions.classList.add("hidden");
-                        return;
-                    }
+                timer = setTimeout(() => {
+                    fetch(`/api/search?q=${encodeURIComponent(q)}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                results.innerHTML = "";
 
-                    data.forEach(item => {
-                        const li = document.createElement("li");
-                        li.innerHTML = `
-                        <div class="px-4 py-3 hover:bg-base-200 cursor-pointer">
-                            <strong>${item.title}</strong>
-                            <div class="text-xs opacity-70">${item.author}</div>
-                        </div>`;
-                        li.onclick = () => window.location.href = `/book/${item.id}`;
-                        suggestions.appendChild(li);
-                    });
+                                if (data.length === 0) {
+                                    noResults.style.display = "block";
+                                    return;
+                                }
 
-                    suggestions.classList.remove("hidden");
-                }, 300);
-            }
+                                noResults.style.display = "none";
 
-            function clearSearch() {
-                searchInput.value = "";
-                suggestions.classList.add("hidden");
-                clearBtn.classList.add("hidden");
-            }
+                                data.forEach(book => {
+                                    results.innerHTML += `
+            <div class="book-card">
+              <div class="book-info">
+                <img src="${book.cover || ''}" class="book-cover">
+                <div>
+                  <h3 class="book-title">${book.title}</h3>
+                  <p class="book-author">${book.author}</p>
+                  <span class="book-category">${book.category}</span>
+                </div>
+              </div>
+              <div class="book-actions">
+                <a href="/book/${book.id}" class="read-btn">Read</a>
+                <a href="${book.pdf}" class="download-btn">Download</a>
+              </div>
+            </div>
+          `;
+                                });
+                            });
+                }, 300); // debounce
+            });
         </script>
-
     </body>
 </html>

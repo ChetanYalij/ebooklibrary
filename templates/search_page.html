@@ -1,143 +1,144 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Book Search</title>
+    <head>
+        <meta charset="UTF-8">
+        <title>Search Books</title>
 
-<style>
-  body {
-    font-family: 'Segoe UI', Arial, sans-serif;
-    background: #f4f6f8;
-    margin: 0;
-    padding: 20px;
-  }
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background: #f4f6f8;
+                margin: 0;
+                padding: 20px;
+            }
 
-  h1 {
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 1.8rem;
-    color: #333;
-  }
+            h1 {
+                text-align: center;
+                margin-bottom: 20px;
+            }
 
-  .search-container {
-    max-width: 600px;
-    margin: 0 auto 30px;
-    position: relative;
-  }
+            .results {
+                max-width: 900px;
+                margin: 0 auto;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
 
-  .search-box {
-    width: 100%;
-    padding: 12px 45px 12px 16px;
-    border-radius: 30px;
-    border: 1px solid #ccc;
-    font-size: 1rem;
-    outline: none;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-  }
+            .book-card {
+                display: flex;
+                align-items: stretch;
+                background: #fff;
+                border-radius: 12px;
+                padding: 12px;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+                min-height: 160px;              /* ⭐ same height */
+                gap: 12px;
+            }
 
-  .clear-btn {
-    position: absolute;
-    right: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    font-size: 18px;
-    color: #888;
-    display: none;
-  }
+            .book-info {
+                display: flex;
+                gap: 12px;
+                flex: 1;                        /* ⭐ equal width */
+            }
 
-  .results {
-    max-width: 700px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
+            .book-cover {
+                width: 80px;
+                height: 120px;
+                object-fit: cover;
+                border-radius: 6px;
+                background: #eee;
+                flex-shrink: 0;                 /* ⭐ no resize */
+            }
 
-  .book-card {
-    display: flex;
-    flex-direction: column;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    padding: 12px;
-    gap: 8px;
-  }
+            .book-title {
+                font-size: 1.1rem;
+                font-weight: 600;
+                margin: 0;
+                color: #1a0dab;
+                line-height: 1.3;
+                max-height: 2.6em;              /* ⭐ 2 lines */
+                overflow: hidden;
+            }
 
-  .book-info {
-    display: flex;
-    gap: 12px;
-  }
+            .book-author {
+                font-size: 0.9rem;
+                opacity: 0.7;
+                margin: 4px 0;
+                max-height: 1.4em;
+                overflow: hidden;
+            }
 
-  .book-cover {
-    width: 80px;
-    height: 120px;
-    object-fit: cover;
-    border-radius: 6px;
-    background: #eee;
-  }
+            .book-category {
+                font-size: 0.8rem;
+                background: #e0f3ff;
+                color: #0288d1;
+                padding: 2px 6px;
+                border-radius: 4px;
+                display: inline-block;
+                margin-top: 4px;
+            }
 
-  .book-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin: 0;
-    color: #1a0dab;
-  }
+            .book-actions {
+                display: flex;
+                align-items: center;
+            }
 
-  .book-author {
-    font-size: 0.9rem;
-    opacity: 0.7;
-    margin: 4px 0;
-  }
+            .read-btn {
+                background: #28a745;
+                color: white;
+                padding: 8px 14px;
+                border-radius: 8px;
+                text-decoration: none;
+                font-size: 0.9rem;
+                white-space: nowrap;
+            }
 
-  .book-category {
-    font-size: 0.8rem;
-    background: #e0f3ff;
-    color: #0288d1;
-    padding: 2px 6px;
-    border-radius: 4px;
-    display: inline-block;
-  }
+            @media (max-width: 640px) {
+                .book-card {
+                    flex-direction: column;
+                    min-height: auto;
+                }
 
-  .highlight {
-    background: yellow;
-  }
+                .book-actions {
+                    justify-content: flex-start;
+                }
+            }
+        </style>
+    </head>
 
-  .book-actions {
-    display: flex;
-    gap: 10px;
-  }
+    <body>
 
-  .book-actions a {
-    flex: 1;
-    text-align: center;
-    padding: 8px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    text-decoration: none;
-    color: white;
-  }
+        <h1>Search Results</h1>
 
-  .read-btn { background: #28a745; }
-  .download-btn { background: #007bff; }
+        <div class="results">
+            {% if books %}
+            {% for book in books %}
+            <div class="book-card">
+                <div class="book-info">
+                    <img
+                        src="{{ book.cover_url or 'https://via.placeholder.com/80x120' }}"
+                        class="book-cover"
+                        alt="Book cover"
+                        >
+                    <div>
+                        <h3 class="book-title">{{ book.title }}</h3>
+                        <p class="book-author">{{ book.author }}</p>
+                        <span class="book-category">{{ book.category }}</span>
+                    </div>
+                </div>
 
-  #no-results {
-    text-align: center;
-    opacity: 0.6;
-    display: none;
-  }
+                <div class="book-actions">
+                    <a href="{{ url_for('book_detail', book_id=book.id) }}" class="read-btn">
+                        Read
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p style="text-align:center; opacity:0.6;">❌ No books found</p>
+            {% endif %}
+        </div>
 
-  @media (min-width: 640px) {
-    .book-card { flex-direction: row; }
-    .book-actions { flex-direction: column; width: 120px; }
-  }
-</style>
-</head>
-<body>
-
-<div class="results" id="results">
-  <p id="no-results">❌ No books found</p>
-</div>
-</body>
+    </body>
 </html>

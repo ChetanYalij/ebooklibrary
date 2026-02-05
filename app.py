@@ -151,19 +151,50 @@ def category_books(category_name):
 @app.route("/search")
 def search():
     query = request.args.get("query", "").strip()
+
     if not query:
         return redirect(url_for("index"))
 
+    search = f"%{query}%"
+
     books = Book.query.filter(
-        Book.title.ilike(f"%{query}%") |
-        Book.author.ilike(f"%{query}%")
-    ).all()
+        Book.title.ilike(search) |
+        Book.author.ilike(search) |
+        Book.category.ilike(search) |
+        Book.description.ilike(search)
+    ).order_by(Book.id.desc()).all()
 
     return render_template(
-        "search_results.html",
+        "search_page.html",
         books=books,
         query=query
     )
+
+@app.route("/api/search")
+def api_search():
+    query = request.args.get("q", "").strip()
+
+    if not query or len(query) < 2:
+        return jsonify([])
+
+    search = f"%{query}%"
+
+    books = Book.query.filter(
+        Book.title.ilike(search) |
+        Book.author.ilike(search) |
+        Book.category.ilike(search)
+    ).order_by(Book.id.desc()).limit(10).all()
+
+    return jsonify([
+        {
+            "id": b.id,
+            "title": b.title,
+            "author": b.author,
+            "category": b.category,
+            "cover": b.cover_url,
+            "pdf": b.pdf_url
+        } for b in books
+    ])
 
 # ================== READ ==================
 @app.route("/read/<int:book_id>")
