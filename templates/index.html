@@ -244,9 +244,9 @@
 
         <!-- ================= SEARCH SCRIPT ================= -->
         <script>
-            const input = document.getElementById("liveSearch");
-            const results = document.getElementById("results");
-            const noResults = document.getElementById("no-results");
+            const input = document.getElementById("searchInput");
+            const suggestions = document.getElementById("suggestions");
+            const clearBtn = document.getElementById("clearBtn");
 
             let timer = null;
 
@@ -254,46 +254,59 @@
                 clearTimeout(timer);
                 const q = input.value.trim();
 
-                if (q.length < 2) {
-                    results.innerHTML = "";
-                    noResults.style.display = "none";
+                if (q.length === 0) {
+                    suggestions.classList.add("hidden");
+                    suggestions.innerHTML = "";
+                    clearBtn.classList.add("hidden");
                     return;
                 }
 
-                timer = setTimeout(() => {
-                    fetch(`/api/search?q=${encodeURIComponent(q)}`)
-                            .then(res => res.json())
-                            .then(data => {
-                                results.innerHTML = "";
+                clearBtn.classList.remove("hidden");
 
-                                if (data.length === 0) {
-                                    noResults.style.display = "block";
-                                    return;
-                                }
+                // ✅ 2 letters पासून suggestion
+                if (q.length < 2) {
+                    suggestions.classList.add("hidden");
+                    suggestions.innerHTML = "";
+                    return;
+                }
 
-                                noResults.style.display = "none";
+                timer = setTimeout(async () => {
+                    const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+                    const data = await res.json();
 
-                                data.forEach(book => {
-                                    results.innerHTML += `
-            <div class="book-card">
-              <div class="book-info">
-                <img src="${book.cover || ''}" class="book-cover">
-                <div>
-                  <h3 class="book-title">${book.title}</h3>
-                  <p class="book-author">${book.author}</p>
-                  <span class="book-category">${book.category}</span>
-                </div>
-              </div>
-              <div class="book-actions">
-                <a href="/book/${book.id}" class="read-btn">Read</a>
-                <a href="${book.pdf}" class="download-btn">Download</a>
-              </div>
-            </div>
-          `;
-                                });
-                            });
-                }, 300); // debounce
+                    suggestions.innerHTML = "";
+
+                    if (data.length === 0) {
+                        suggestions.innerHTML = `
+                <li class="px-4 py-3 text-sm opacity-60">
+                    No results found
+                </li>`;
+                        suggestions.classList.remove("hidden");
+                        return;
+                    }
+
+                    data.forEach(book => {
+                        const li = document.createElement("li");
+                        li.innerHTML = `
+                <a href="/book/${book.id}"
+                   class="block px-4 py-3 hover:bg-base-200">
+                    <div class="font-semibold">${book.title}</div>
+                    <div class="text-xs opacity-70">${book.author}</div>
+                </a>
+            `;
+                        suggestions.appendChild(li);
+                    });
+
+                    suggestions.classList.remove("hidden");
+                }, 300);
             });
+
+            function clearSearch() {
+                input.value = "";
+                suggestions.innerHTML = "";
+                suggestions.classList.add("hidden");
+                clearBtn.classList.add("hidden");
+            }
         </script>
     </body>
 </html>
