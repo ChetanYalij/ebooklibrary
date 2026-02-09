@@ -136,37 +136,48 @@
 
         <!-- ================= CATEGORIES ================= -->
         <div class="max-w-6xl mx-auto px-6 py-10 w-full">
-            <h2 class="text-2xl font-bold text-center mb-6">📂📂 Categories</h2>
+            <h2 class="text-2xl font-bold text-center mb-6">📂 Categories</h2>
 
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                <a href="{{ url_for('category_books', category_name='Programming') }}"
-                   class="btn btn-outline btn-primary h-20 flex flex-col justify-center">
-                    💻 Programming
-                </a>
 
-                <a href="{{ url_for('category_books', category_name='Education') }}"
-                   class="btn btn-outline btn-secondary h-20 flex flex-col justify-center">
-                    🎓 Education
-                </a>
-
-                <a href="{{ url_for('category_books', category_name='Novel') }}"
-                   class="btn btn-outline btn-accent h-20 flex flex-col justify-center">
-                    📖 Novels
-                </a>
-
-                <a href="{{ url_for('category_books', category_name='Science') }}"
+                <a href="{{ url_for('category_books', category_name='Fiction') }}"
                    class="btn btn-outline h-20 flex flex-col justify-center">
-                    🔬 Science
+                    📖 Fiction
+                </a>
+
+                <a href="{{ url_for('category_books', category_name='Non-Fiction') }}"
+                   class="btn btn-outline h-20 flex flex-col justify-center">
+                    📚 Non-Fiction
                 </a>
 
                 <a href="{{ url_for('category_books', category_name='Technology') }}"
-                   class="btn btn-outline btn-info h-20 flex flex-col justify-center">
-                    ⚙️ Technology
+                   class="btn btn-outline h-20 flex flex-col justify-center">
+                    💻 Technology
                 </a>
 
                 <a href="{{ url_for('category_books', category_name='Biography') }}"
-                   class="btn btn-outline btn-success h-20 flex flex-col justify-center">
+                   class="btn btn-outline h-20 flex flex-col justify-center">
                     👤 Biography
+                </a>
+
+                <a href="{{ url_for('category_books', category_name='Self Help') }}"
+                   class="btn btn-outline h-20 flex flex-col justify-center">
+                    📑 Reference
+                </a>
+
+                <a href="{{ url_for('category_books', category_name='General') }}"
+                   class="btn btn-outline h-20 flex flex-col justify-center">
+                    🏛 History
+                </a>
+
+                <a href="{{ url_for('category_books', category_name='General') }}"
+                   class="btn btn-outline h-20 flex flex-col justify-center">
+                    🧒 Kids
+                </a>
+
+                <a href="{{ url_for('category_books', category_name='General') }}"
+                   class="btn btn-outline h-20 flex flex-col justify-center">
+                    📘 Other
                 </a>
             </div>
         </div>
