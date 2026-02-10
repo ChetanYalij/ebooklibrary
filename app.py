@@ -270,13 +270,6 @@ def admin_dashboard():
         recent_books=recent_books
     )
 
-# ================== >>> ADDED ROUTE <<< ==================
-@app.route("/admin/all-books")
-@admin_required
-def admin_all_books():
-    books = Book.query.order_by(Book.id.desc()).all()
-    return render_template("admin_all_books.html", books=books)
-
 # ================== ADMIN UPLOAD ==================
 @app.route("/admin/upload", methods=["GET", "POST"])
 @admin_required
@@ -353,7 +346,7 @@ def update_book(book_id):
 
     db.session.commit()
     flash("Book updated successfully", "success")
-    return redirect(url_for("admin_all_books"))
+    return redirect(url_for("admin_dashboard"))
 
 # ================== ERRORS ==================
 @app.errorhandler(403)
