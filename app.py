@@ -137,14 +137,16 @@ def book_detail(book_id):
 # ================== CATEGORY ==================
 @app.route("/category/<category_name>")
 def category_books(category_name):
+    category_name = category_name.strip().lower()
+
     books = Book.query.filter(
-        Book.category.ilike(f"%{category_name}%")
+        func.trim(func.lower(Book.category)) == category_name
     ).all()
 
     return render_template(
         "categories.html",
         books=books,
-        category=category_name
+        category=category_name.capitalize()
     )
 
 # ================== SEARCH ==================
@@ -337,7 +339,7 @@ def update_book(book_id):
     book.title = request.form["title"]
     book.author = request.form["author"]
     book.description = request.form.get("description", "")
-    book.category = request.form.get("category", book.category)
+    book.category = request.form.get("category", book.category).strip().lower()
 
     cover_file = request.files.get("cover_file")
     if cover_file and cover_file.filename != "":
