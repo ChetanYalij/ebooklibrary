@@ -7,6 +7,8 @@
 
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet"/>
+        <link rel="stylesheet" href="style.css" type="text/css">
+
     </head>
 
     <body class="bg-base-100 min-h-screen">
@@ -123,9 +125,17 @@
                                        class="input input-bordered input-sm w-full">
 
                                 <!-- Category -->
-                                <input type="text" name="category"
-                                       value="{{ book.category }}"
-                                       class="input input-bordered input-sm w-full">
+                                <select name="category"
+                                        class="select select-bordered select-sm w-full">
+                                    <option value="Fiction" {% if book.category == 'Fiction' %}selected{% endif %}>Fiction</option>
+                                    <option value="Non-Fiction" {% if book.category == 'Non-Fiction' %}selected{% endif %}>Non-Fiction</option>
+                                    <option value="Technology" {% if book.category == 'Technology' %}selected{% endif %}>Technology</option>
+                                    <option value="Biography" {% if book.category == 'Biography' %}selected{% endif %}>Biography</option>
+                                    <option value="Knowledge" {% if book.category == 'Knowledge' %}selected{% endif %}>Academic</option>
+                                    <option value="History" {% if book.category == 'History' %}selected{% endif %}>History</option>
+                                    <option value="Kids" {% if book.category == 'Kids' %}selected{% endif %}>Kids</option>
+                                    <option value="Other" {% if book.category == 'Other' %}selected{% endif %}>Other</option>
+                                </select>
 
                                 <!-- Actions -->
                                 <div class="flex gap-2">
