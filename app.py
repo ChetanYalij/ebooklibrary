@@ -263,18 +263,18 @@ def admin_dashboard():
     total_authors = db.session.query(Book.author).distinct().count()
 
     category_stats = db.session.query(
-        func.coalesce(Book.category, "Uncategorized"),
+        func.coalesce(Book.category, "uncategorized"),
         func.count(Book.id)
-    ).group_by(func.coalesce(Book.category, "Uncategorized")).all()
+    ).group_by(func.coalesce(Book.category, "uncategorized")).all()
 
-    recent_books = Book.query.order_by(Book.id.desc()).limit(10).all()
+    books = Book.query.order_by(Book.id.desc()).all()
 
     return render_template(
         "admin_dashboard.html",
         total_books=total_books,
         total_authors=total_authors,
         category_stats=category_stats,
-        recent_books=recent_books
+        books=books
     )
 
 # ================== ADMIN UPLOAD ==================
