@@ -127,14 +127,47 @@
                                 <!-- Category -->
                                 <select name="category"
                                         class="select select-bordered select-sm w-full">
-                                    <option value="Fiction" {% if book.category == 'Fiction' %}selected{% endif %}>Fiction</option>
-                                    <option value="Non-Fiction" {% if book.category == 'Non-Fiction' %}selected{% endif %}>Non-Fiction</option>
-                                    <option value="Technology" {% if book.category == 'Technology' %}selected{% endif %}>Technology</option>
-                                    <option value="Biography" {% if book.category == 'Biography' %}selected{% endif %}>Biography</option>
-                                    <option value="Knowledge" {% if book.category == 'Knowledge' %}selected{% endif %}>Knowledge</option>
-                                    <option value="History" {% if book.category == 'History' %}selected{% endif %}>History</option>
-                                    <option value="Kids" {% if book.category == 'Kids' %}selected{% endif %}>Kids</option>
-                                    <option value="Other" {% if book.category == 'Other' %}selected{% endif %}>Other</option>
+
+                                    <option value="fiction"
+                                            {% if book.category|lower|replace('[','')|replace(']','') == 'fiction' %}selected{% endif %}>
+                                        Fiction
+                                    </option>
+
+                                    <option value="non-fiction"
+                                            {% if book.category|lower|replace('[','')|replace(']','') == 'non-fiction' %}selected{% endif %}>
+                                        Non-Fiction
+                                    </option>
+
+                                    <option value="technology"
+                                            {% if book.category|lower|replace('[','')|replace(']','') == 'technology' %}selected{% endif %}>
+                                        Technology
+                                    </option>
+
+                                    <option value="biography"
+                                            {% if book.category|lower|replace('[','')|replace(']','') == 'biography' %}selected{% endif %}>
+                                        Biography
+                                    </option>
+
+                                    <option value="knowledge"
+                                            {% if book.category|lower|replace('[','')|replace(']','') == 'knowledge' %}selected{% endif %}>
+                                        Knowledge
+                                    </option>
+
+                                    <option value="history"
+                                            {% if book.category|lower|replace('[','')|replace(']','') == 'history' %}selected{% endif %}>
+                                        History
+                                    </option>
+
+                                    <option value="kids"
+                                            {% if book.category|lower|replace('[','')|replace(']','') == 'kids' %}selected{% endif %}>
+                                        Kids
+                                    </option>
+
+                                    <option value="other"
+                                            {% if book.category|lower|replace('[','')|replace(']','') == 'other' %}selected{% endif %}>
+                                        Other
+                                    </option>
+
                                 </select>
 
                                 <!-- Actions -->

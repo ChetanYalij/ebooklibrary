@@ -137,16 +137,21 @@ def book_detail(book_id):
 # ================== CATEGORY ==================
 @app.route("/category/<category_name>")
 def category_books(category_name):
-    category_name = category_name.strip().lower()
+    clean_category = category_name.strip().lower()
 
     books = Book.query.filter(
-        func.trim(func.lower(Book.category)) == category_name
+        func.lower(
+            func.replace(
+                func.replace(Book.category, '[', ''),
+                ']', ''
+            )
+        ) == clean_category
     ).all()
 
     return render_template(
         "categories.html",
         books=books,
-        category=category_name.capitalize()
+        category=category_name
     )
 
 # ================== SEARCH ==================
@@ -338,13 +343,17 @@ def update_book(book_id):
 
     book.title = request.form["title"]
     book.author = request.form["author"]
-    book.description = request.form.get("description", "")
-    book.category = request.form.get("category", book.category).strip().lower()
 
-    cover_file = request.files.get("cover_file")
-    if cover_file and cover_file.filename != "":
-        upload = cloudinary.uploader.upload(cover_file)
-        book.cover_url = upload["secure_url"]
+    raw_category = request.form.get("category", "")
+    clean_category = (
+        raw_category
+        .replace("[", "")
+        .replace("]", "")
+        .strip()
+        .lower()
+    )
+
+    book.category = clean_category
 
     db.session.commit()
     flash("Book updated successfully", "success")
