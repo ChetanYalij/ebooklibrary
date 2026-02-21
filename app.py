@@ -69,8 +69,11 @@ class Book(db.Model):
     author = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     category = db.Column(db.String(100))
+
     cover_url = db.Column(db.String(500))
     pdf_url = db.Column(db.String(500))
+
+    views = db.Column(db.Integer, default=0)
 
 # ================== DECORATORS ==================
 def login_required(f):
@@ -132,6 +135,8 @@ def contact():
 @app.route("/book/<int:book_id>")
 def book_detail(book_id):
     book = Book.query.get_or_404(book_id)
+    book.views += 1
+    db.session.commit()
     return render_template("book_detail.html", book=book)
 
 # ================== CATEGORY ==================
@@ -248,6 +253,31 @@ def login():
         flash("Invalid email or password.", "error")
 
     return render_template("login.html")
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form['email']
+        new_password = request.form['new_password']
+        confirm_password = request.form['confirm_password']
+
+        if new_password != confirm_password:
+            flash('Passwords do not match', 'error')
+            return redirect(url_for('forgot_password'))
+
+        # DB logic (example)
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            flash('Email not found', 'error')
+            return redirect(url_for('forgot_password'))
+
+        user.password = generate_password_hash(new_password)
+        db.session.commit()
+
+        flash('Password updated successfully', 'success')
+        return redirect(url_for('login'))
+
+    return render_template('forgot_password.html')
 
 @app.route("/logout")
 def logout():

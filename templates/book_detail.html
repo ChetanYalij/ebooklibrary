@@ -72,6 +72,11 @@
                         {{ book.description or "No description available." }}
                     </p>
 
+                    <div class="views-badge">👁️ {{ book.views }} views</div>
+                    {% if book.views >= 100 %}
+                    <div class="popular-tag">🔥 Popular</div>
+                    {% endif %}
+                    
                     <!-- ACTION BUTTONS -->
                     <div class="mt-8 flex gap-3 flex-col sm:flex-row">
 
