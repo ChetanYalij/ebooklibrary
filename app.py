@@ -132,12 +132,14 @@ def about():
 def contact():
     return render_template("contact.html")
 
-@app.route("/book/<int:book_id>")
+@app.route('/book/<int:book_id>')
 def book_detail(book_id):
     book = Book.query.get_or_404(book_id)
+
     book.views += 1
     db.session.commit()
-    return render_template("book_detail.html", book=book)
+
+    return render_template('book_detail.html', book=book)
 
 # ================== CATEGORY ==================
 @app.route("/category/<category_name>")
@@ -213,6 +215,10 @@ def api_search():
 @login_required
 def read_book(book_id):
     book = Book.query.get_or_404(book_id)
+
+    book.views += 1
+    db.session.commit()
+
     return render_template("book_detail.html", book=book)
 
 # ================== AUTH ==================
