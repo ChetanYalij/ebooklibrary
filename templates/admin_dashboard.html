@@ -8,162 +8,100 @@
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet"/>
         <link rel="stylesheet" href="style.css" type="text/css">
-
     </head>
 
     <body class="bg-base-100 min-h-screen">
 
         <!-- ================= NAVBAR ================= -->
-        <div class="navbar bg-base-200 shadow flex flex-col md:flex-row gap-3 md:gap-0 px-4">
-
+        <div class="navbar bg-base-200 shadow flex flex-col md:flex-row gap-3 px-4">
             <div class="flex-1">
-                <a href="/" class="btn btn-ghost text-lg md:text-xl font-bold">
-                    📚 E-Library Admin
-                </a>
+                <a href="/" class="btn btn-ghost text-xl font-bold">📚 E-Library Admin</a>
             </div>
-
-            <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-
-                <a href="{{ url_for('upload_book') }}"
-                   class="btn btn-sm btn-primary w-full md:w-auto">
-                    ➕ Upload Book
-                </a>
-
-                <a href="{{ url_for('logout') }}"
-                   class="btn btn-sm btn-outline btn-error w-full md:w-auto">
-                    Logout
-                </a>
-
-                <span class="badge badge-primary self-center md:self-auto">
-                    ADMIN
-                </span>
-
+            <div class="flex gap-2">
+                <a href="{{ url_for('upload_book') }}" class="btn btn-sm btn-primary">➕ Upload Book</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline btn-error">Logout</a>
+                <span class="badge badge-primary">ADMIN</span>
             </div>
         </div>
 
-        <!-- ================= CONTENT ================= -->
-        <div class="container mx-auto px-4 md:px-6 py-6 md:py-8">
+        <div class="container mx-auto px-6 py-8">
 
             <!-- ================= STATS ================= -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-
                 <div class="stat bg-base-200 rounded-xl shadow">
                     <div class="stat-title">Total Books</div>
                     <div class="stat-value text-primary">{{ total_books }}</div>
                 </div>
-
                 <div class="stat bg-base-200 rounded-xl shadow">
                     <div class="stat-title">Total Authors</div>
                     <div class="stat-value text-secondary">{{ total_authors }}</div>
                 </div>
-
                 <div class="stat bg-base-200 rounded-xl shadow">
                     <div class="stat-title">Categories</div>
                     <div class="stat-value text-accent">{{ category_stats|length }}</div>
                 </div>
-
             </div>
 
             <!-- ================= CATEGORY STATS ================= -->
             <div class="card bg-base-200 shadow mb-10">
                 <div class="card-body">
-                    <h2 class="card-title text-base md:text-lg">
-                        📂 Category Distribution
-                    </h2>
-
+                    <h2 class="card-title">📂 Category Distribution</h2>
                     {% if category_stats %}
                     <ul class="mt-4 space-y-2">
                         {% for cat, count in category_stats %}
-                        <li class="flex justify-between border-b pb-1 text-sm md:text-base">
+                        <li class="flex justify-between border-b pb-1">
                             <span>{{ cat }}</span>
                             <span class="badge badge-outline">{{ count }}</span>
                         </li>
                         {% endfor %}
                     </ul>
                     {% else %}
-                    <p class="text-sm opacity-60 mt-3">No categories found</p>
+                    <p class="opacity-60">No categories found</p>
                     {% endif %}
                 </div>
             </div>
 
-            <!-- ================= RECENT BOOKS ================= -->
+            <!-- ================= BOOK READING COUNT ================= -->
+            <div class="card bg-base-200 shadow mb-10">
+                <div class="card-body">
+                    <h2 class="card-title">👁️ Book Reading Count</h2>
+
+                    <table class="w-full mt-4 border">
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Title</th><th>Author</th><th>Category</th><th>Views</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for book in books %}
+                            <tr class="table-row">
+                                <td>{{ book.id }}</td>
+                                <td>{{ book.title }}</td>
+                                <td>{{ book.author }}</td>
+                                <td>{{ book.category }}</td>
+                                <td>{{ book.views }} {% if book.views>=100 %}🔥{% endif %}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- ================= ALL BOOKS ================= -->
             <div class="card bg-base-200 shadow">
                 <div class="card-body">
-                    <h2 class="card-title text-base md:text-lg">
-                        📚 All Books
-                    </h2>
+                    <h2 class="card-title">📚 All Books</h2>
 
-                    {% if books %}
                     <ul class="mt-4 space-y-4">
                         {% for book in books %}
-                        <li class="border-b pb-4">
-
-                            <form method="POST"
-                                  action="{{ url_for('update_book', book_id=book.id) }}"
-                                  enctype="multipart/form-data"
-                                  class="grid grid-cols-1 md:grid-cols-5 gap-3 items-center">
-
-                                <!-- Cover -->
-                                <div>
-                                    {% if book.cover_url %}
-                                    <img src="{{ book.cover_url }}"
-                                         class="w-20 h-28 object-cover rounded shadow">
-                                    {% else %}
-                                    <div class="w-20 h-28 bg-base-300 flex items-center justify-center text-xs">
-                                        No Cover
-                                    </div>
-                                    {% endif %}
-                                </div>
-
-                                <!-- Title -->
-                                <input type="text" name="title"
-                                       value="{{ book.title }}"
-                                       class="input input-bordered input-sm w-full">
-
-                                <!-- Author -->
-                                <input type="text" name="author"
-                                       value="{{ book.author }}"
-                                       class="input input-bordered input-sm w-full">
-
-                                <!-- Category -->
-                                <select name="category"
-                                        class="select select-bordered select-sm w-full">
-
-                                    {% set cat = book.category|lower|replace('[','')|replace(']','') %}
-
-                                    <option value="fiction" {{ 'selected' if cat=='fiction' else '' }}>Fiction</option>
-                                    <option value="non-fiction" {{ 'selected' if cat=='non-fiction' else '' }}>Non-Fiction</option>
-                                    <option value="technology" {{ 'selected' if cat=='technology' else '' }}>Technology</option>
-                                    <option value="biography" {{ 'selected' if cat=='biography' else '' }}>Biography</option>
-                                    <option value="knowledge" {{ 'selected' if cat=='knowledge' else '' }}>Knowledge</option>
-                                    <option value="history" {{ 'selected' if cat=='history' else '' }}>History</option>
-                                    <option value="kids" {{ 'selected' if cat=='kids' else '' }}>Kids</option>
-                                    <option value="other" {{ 'selected' if cat=='other' else '' }}>Other</option>
-
-                                </select>
-
-                                <!-- Actions -->
-                                <div class="flex gap-2">
-                                    <button class="btn btn-xs btn-success">💾 Save</button>
-
-                                    <form method="POST"
-                                          action="{{ url_for('delete_book', book_id=book.id) }}"
-                                          onsubmit="return confirm('Delete this book?');">
-                                        <button class="btn btn-xs btn-error">🗑</button>
-                                    </form>
-                                </div>
-
-                            </form>
-
+                        <li class="list-item border-b pb-4">
+                            <strong>{{ book.title }}</strong> — {{ book.author }}
                         </li>
                         {% endfor %}
                     </ul>
-                    {% else %}
-                    <p class="text-sm opacity-60 mt-4">No books found.</p>
-                    {% endif %}
                 </div>
             </div>
+
         </div>
 
     </body>
